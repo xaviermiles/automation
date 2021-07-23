@@ -1,11 +1,11 @@
 import os
 import re
+import itertools
 from datetime import datetime
 from collections import OrderedDict
 import pandas as pd
 from bs4 import BeautifulSoup
 
-from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -16,7 +16,6 @@ import utils
 
 # Functions to download arbitrary/specified dataset from infoshare
 def navigate_to_dataset(driver, dataset_ref):
-    print('--'.join(dataset_ref))
     category, group, dataset = dataset_ref
     try:
         category_elem = driver.find_element_by_xpath(
@@ -93,16 +92,29 @@ def download_dataset(driver, dataset_name):
     data_soup = BeautifulSoup(data.get_attribute('outerHTML'), 'html.parser')
     data_df = pd.read_html(str(data_soup))[0]
     data_df.to_csv(f"{SAVE_DIR}/{dataset_name}.csv", index=False)
+
     return driver
 
 
-def get_infoshare_dataset(dataset_ref, title_to_option):
-    driver = utils.get_firefox_driver(SAVE_DIR, ['text/csv'])
-    driver.get("http://infoshare.stats.govt.nz/")
-    driver = navigate_to_dataset(driver, dataset_ref)
-    dataset_name = '__'.join([dataset_ref[-1]] + list(title_to_option.values()))
-    driver = make_infoshare_selections(driver, title_to_option, dataset_name)
-    driver.quit()
+def get_infoshare_dataset(dataset_ref, title_to_options):
+    print('--'.join(dataset_ref))
+    option_combinations = list(itertools.product(*title_to_options.values()))
+    
+    # Download the data for each combination of selection options
+    # NB: title_to_options[str -> list[str]] VERSUS title_to_option[str -> str]
+    for i, comb in enumerate(option_combinations):
+        print(i)
+        driver = utils.get_firefox_driver(SAVE_DIR, ['text/csv'])
+        driver.get("http://infoshare.stats.govt.nz/")
+        driver = navigate_to_dataset(driver, dataset_ref)
+
+        title_to_option = OrderedDict({
+            k: v for k, v in zip(title_to_options.keys(), comb)
+        })
+        dataset_name = '__'.join([dataset_ref[-1]] + list(comb))
+        driver = make_infoshare_selections(driver, title_to_option, dataset_name)
+
+        driver.quit()
 
 
 # Functions to download specific datasets from infoshare
@@ -112,10 +124,10 @@ def get_cargo_exports():
             'Imports and exports',
             'Overseas Cargo Statistics - OSC',
             'Total Exports by New Zealand Port (Monthly)'),
-        title_to_option = OrderedDict({
-            'New Zealand Port': 'Christchurch Airport',
-            'Observations': 'Gross weight (tonnes)',
-            'Time': 'USE_LATEST_DATETIME<%YM%m>'
+        title_to_options = OrderedDict({
+            'New Zealand Port': ['Christchurch Airport'],
+            'Observations': ['FOB (free on board) NZ$(000)','Gross weight (tonnes)'],
+            'Time': ['USE_LATEST_DATETIME<%YM%m>']
         })
     )
 
@@ -126,10 +138,10 @@ def get_cargo_imports():
             'Imports and exports',
             'Overseas Cargo Statistics - OSC',
             'Total Imports by New Zealand Port (Monthly)'),
-        title_to_option = OrderedDict({
-            'New Zealand Port': 'Christchurch Airport',
-            'Observations': 'Gross weight (tonnes)',
-            'Time': 'USE_LATEST_DATETIME<%YM%m>'
+        title_to_options = OrderedDict({
+            'New Zealand Port': ['Christchurch Airport'],
+            'Observations': ['CIF (cost, insurance and freight) NZ$(000)','Gross weight (tonnes)'],
+            'Time': ['USE_LATEST_DATETIME<%YM%m>']
         })
     )
 
