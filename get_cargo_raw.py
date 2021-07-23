@@ -11,21 +11,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
 
-
-def get_firefox_driver():
-    opts = webdriver.FirefoxOptions()
-    opts.add_argument("--headless")
-    # Profile preferences necessary if downloading data+meta together in one CSV:
-    profile = webdriver.FirefoxProfile()
-    profile.set_preference("browser.download.folderList", 2)
-    profile.set_preference("browser.download.manager.showWhenStarting", False)
-    profile.set_preference("browser.download.dir", SAVE_DIR)
-    profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")
-
-    driver = webdriver.Firefox(options=opts, firefox_profile=profile)
-    return driver
+import utils
    
-    
+
+# Functions to download arbitrary/specified dataset from infoshare
 def navigate_to_dataset(driver, dataset_ref):
     print('--'.join(dataset_ref))
     category, group, dataset = dataset_ref
@@ -64,6 +53,7 @@ def navigate_to_dataset(driver, dataset_ref):
     dataset_elem.click()
     
     return driver
+
 
 def make_infoshare_selections(driver, title_to_option, dataset_name):
     """
@@ -107,15 +97,15 @@ def download_dataset(driver, dataset_name):
 
 
 def get_infoshare_dataset(dataset_ref, title_to_option):
-    driver = get_firefox_driver()
+    driver = utils.get_firefox_driver(SAVE_DIR, ['text/csv'])
     driver.get("http://infoshare.stats.govt.nz/")
     driver = navigate_to_dataset(driver, dataset_ref)
-    dataset_name = '__'.join([dataset_ref[-1]] + title_to_option.values())
+    dataset_name = '__'.join([dataset_ref[-1]] + list(title_to_option.values()))
     driver = make_infoshare_selections(driver, title_to_option, dataset_name)
     driver.quit()
 
 
-# Specific datasets
+# Functions to download specific datasets from infoshare
 def get_cargo_exports():
     get_infoshare_dataset(
         dataset_ref = (
@@ -128,6 +118,7 @@ def get_cargo_exports():
             'Time': 'USE_LATEST_DATETIME<%YM%m>'
         })
     )
+
 
 def get_cargo_imports():
     get_infoshare_dataset(
@@ -144,7 +135,10 @@ def get_cargo_imports():
 
 
 if __name__ == "__main__":
-    SAVE_DIR = os.path.join(os.getcwd(), 'covid_portal_raw', 'Infoshare')    
+    SAVE_DIR = os.path.join(os.getcwd(), 'covid_portal_raw', 'Infoshare') 
+    if not os.path.exists(SAVE_DIR):
+        os.makedirs(SAVE_DIR)
+    
     get_cargo_exports()
     get_cargo_imports()
     

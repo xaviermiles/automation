@@ -18,25 +18,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
 
-
-# Helper functions
-def get_driver_with_site():
-    opts = webdriver.FirefoxOptions()
-    opts.add_argument("--headless")
-    # Profile preferences necessary if downloading data+meta together in one CSV:
-    profile = webdriver.FirefoxProfile()
-    profile.set_preference("browser.download.folderList", 2)
-    profile.set_preference("browser.download.manager.showWhenStarting", False)
-    profile.set_preference("browser.download.dir", SAVE_DIR)
-    profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")
-
-    driver = webdriver.Firefox(options=opts, firefox_profile=profile)
-    driver.get("http://infoshare.stats.govt.nz/")
-    return driver
+import utils
 
 
 def get_num_fl_folders():
-    driver = get_driver_with_site()
+    driver = utils.get_firefox_driver(SAVE_DIR, ['text/csv'])
+    driver.get("http://infoshare.stats.govt.nz/")
     num_fl_folders = len(driver.find_elements_by_xpath(
         "//div[@id = 'ctl00_MainContent_tvBrowseNodes']"
         "//td[@style]"
@@ -56,8 +43,7 @@ def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
             ))
         )
     except TimeoutException:
-        print("page didn't load :(")
-        return driver
+        raise NotImplementedError("page didn't load :(")
     
     select_all_ids = [e.get_attribute('id') for e in driver.find_elements_by_xpath(
         "//table[@id = 'ctl00_MainContent_tblVariableSelectors']"
@@ -108,8 +94,7 @@ def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
         )
         browse.click()
     except TimeoutException:
-        driver.quit()  # restart browser
-        driver = get_driver_with_site()
+        raise NotImplementedError("Can't find browse button.")
         
     return driver
 
@@ -122,9 +107,9 @@ def navigate_mainpage(save_dir):
     
     data_ids = []
     i = 0
-#     for i in range(3, 4):
-    for i in range(num_fl_folders):
-        driver = get_driver_with_site()
+    for fl_num in range(num_fl_folders):
+        driver = utils.get_firefox_driver(SAVE_DIR, ['text/csv'])
+        driver.get("http://infoshare.stats.govt.nz/")
         try:
             fl_elem = driver.find_element_by_xpath(
                 "//div[@id = 'ctl00_MainContent_tvBrowseNodes']"
@@ -136,8 +121,7 @@ def navigate_mainpage(save_dir):
         fl_name = fl_elem.text
         print(i, fl_name)
         fl_elem.click()
-        fl_num = i
-        i += 1
+        i = fl_num + 1
 
         while True:
             try:

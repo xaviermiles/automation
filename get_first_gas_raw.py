@@ -8,25 +8,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
 
-
-def get_driver():
-    opts = webdriver.FirefoxOptions()
-    opts.add_argument("--headless")
-    profile = webdriver.FirefoxProfile()
-    profile.set_preference("browser.download.folderList", 2)
-    profile.set_preference("browser.download.manager.showWhenStarting", False)
-    profile.set_preference("browser.download.dir", OUTPUT_FOLDER)
-    download_filetypes = ("application/octet-stream"
-                          ",application/download; charset=utf-8")
-    profile.set_preference("browser.helperApps.neverAsk.saveToDisk", 
-                           download_filetypes)
-    driver = webdriver.Firefox(options=opts, firefox_profile=profile)
-    return driver
+import utils
 
 
 def by_largest_users():
     print("Starting: by_largest_users")
-    driver = get_driver()
+    driver = utils.get_firefox_driver(SAVE_DIR, ['application/octet-stream'])
     driver.get(
         "https://www.oatis.co.nz/Ngc.Oatis.UI.Web.Internet/Common/"
         "OatisLogin.aspx"
@@ -57,9 +44,9 @@ def by_largest_users():
         f"//table[@id = 'DocumentCategoryDataList__ctl{section_num}_DocumentDataList']"
         "//a[contains(@id, 'DocumentLinkButton')]"
     )[-1]
-    default_fpath = os.path.join(OUTPUT_FOLDER, f"{latest_report.text}.xlsx")
+    default_fpath = os.path.join(SAVE_DIR, f"{latest_report.text}.xlsx")
     latest_report.click()
-    altered_fpath = os.path.join(OUTPUT_FOLDER, "Maui SQMQ Report.xlsx")
+    altered_fpath = os.path.join(SAVE_DIR, "Maui SQMQ Report.xlsx")
     os.rename(default_fpath, altered_fpath)  # overwrites previous copy
     
     print("Finished: by_largest_users\n")
@@ -88,7 +75,8 @@ def by_selected_major_users():
         'TRC02003': ['2003', '2004']
     }
     
-    driver = get_driver()
+    driver = utils.get_firefox_driver(SAVE_DIR, 
+                                      ['application/download; charset=utf-8'])
     driver.get(
         "https://www.oatis.co.nz/Ngc.Oatis.UI.Web.Internet/Common/"
         "OatisLogin.aspx"
@@ -125,7 +113,7 @@ def by_selected_major_users():
             except TimeoutException:
                 raise NotImplementedError("Page has changed or is very slow to load")
             # Download the data for each meter, replacing the previous versions
-            download_fpath = os.path.join(OUTPUT_FOLDER, f"DDR{meter}.csv")
+            download_fpath = os.path.join(SAVE_DIR, f"DDR{meter}.csv")
             if os.path.exists(download_fpath):
                 os.remove(download_fpath)
             driver.find_element_by_id('DownloadButton').click()
@@ -136,9 +124,9 @@ def by_selected_major_users():
     
 
 if __name__ == "__main__":
-    OUTPUT_FOLDER = os.path.join(os.getcwd(), 'covid_portal_raw', 'First Gas')
-    if not os.path.exists(OUTPUT_FOLDER):
-        os.makedirs(OUTPUT_FOLDER)
+    SAVE_DIR = os.path.join(os.getcwd(), 'covid_portal_raw', 'First Gas')
+    if not os.path.exists(SAVE_DIR):
+        os.makedirs(SAVE_DIR)
     
     by_largest_users()
     by_selected_major_users()
