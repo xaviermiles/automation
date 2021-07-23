@@ -136,7 +136,7 @@ def by_selected_major_users():
     
 
 if __name__ == "__main__":
-    OUTPUT_FOLDER = os.path.join(os.getcwd(), "First Gas")
+    OUTPUT_FOLDER = os.path.join(os.getcwd(), 'covid_portal_raw', 'First Gas')
     if not os.path.exists(OUTPUT_FOLDER):
         os.makedirs(OUTPUT_FOLDER)
     
