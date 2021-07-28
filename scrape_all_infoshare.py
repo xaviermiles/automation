@@ -55,10 +55,15 @@ def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
         )
         elem.click()
     
-    go_button = driver.find_element_by_xpath(
-        "//input[@id = 'ctl00_MainContent_btnGo']"
-    )
-    go_button.click()  # navigate to View table page
+    try:
+        go = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.ID,
+                'ctl00_MainContent_btnGo'
+            ))
+        )
+    except TimeoutException:
+        raise TimeoutException("Can't find the Go button.")
+    go.click()  # navigate to View table page
     
     # Saves data and metadata together in one CSV:
 #     save_dropdown = Select(driver.find_element_by_id('ctl00_MainContent_dlSaveOptions'))
