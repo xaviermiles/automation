@@ -73,7 +73,16 @@ def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
 #     fpath = max([f"{save_dir}/{f}" for f in os.listdir(save_dir)], key=os.path.getctime)
 #     os.rename(fpath, f"{save_dir}/{dataset_name}.csv")
     
-    # Save data and metdata in different files:
+    # Save data and metadata in different files:
+    try:
+        _ = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.XPATH, 
+                "//table[@class = 'pxtable']"
+            ))
+        )
+    except TimeoutException:
+        raise TimeoutException("Data and metadata tables not loading.")
+    
     tables = driver.find_elements_by_xpath("//table[@class = 'pxtable']")
     data = tables[0].get_attribute('outerHTML')
     data_soup = BeautifulSoup(data, 'html.parser')
