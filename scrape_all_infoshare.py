@@ -36,9 +36,9 @@ def get_num_fl_folders():
 def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
     tl_elem.click()  # navigate to Search tab
     try:
-        _ = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, 
-                "//table[@id = 'navigation']"
+        yes = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, 
+                'ctl00_MainContent_tblVariableSelectors'
             ))
         )
     except TimeoutException:
@@ -49,10 +49,7 @@ def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
         "//span[substring(@id, string-length(@id) - string-length('SelectAll') + 1) = 'SelectAll']"
     )]
     for select_all_id in select_all_ids:
-        elem = driver.find_element_by_xpath(
-            "//table[@id = 'ctl00_MainContent_tblVariableSelectors']"
-            f"//span[@id = '{select_all_id}']"
-        )
+        elem = driver.find_element_by_id(select_all_id)
         elem.click()
     
     try:
@@ -173,7 +170,7 @@ def navigate_mainpage(save_dir):
 
                 # LOGIC TO DOWNLOAD DATASET:
                 tl_name = tl_elem.text
-                dataset_name = '__'.join([fl_name, sl_name, tl_name])
+                dataset_name = '__'.join([fl_name, sl_name, tl_name]).replace('/', ' ')
                 driver = get_info_from_dataset(driver, tl_elem, dataset_name, save_dir)
 
                 i += 2  # unsure why this is different to first/second levels 
