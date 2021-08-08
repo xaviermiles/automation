@@ -89,8 +89,17 @@ def by_selected_major_users():
     dates = [datetime.strptime(l.text, "%b %Y") for l in month_dropdown.options
              if l.text]
     latest_date = max(dates)
+    #latest_date = sorted(dates)[-2]
     latest_date_str = datetime.strftime(latest_date, '%b %Y')
-    month_dropdown.select_by_visible_text(latest_date_str)
+    # get current datetime
+    current_month = datetime.today().strftime('%b %Y')
+    if(current_month == latest_date_str):
+        date_str = datetime.strftime(sorted(dates)[-2], '%b %Y')
+    else:
+        date_str = datetime.strftime(latest_date, '%b %Y')
+    print("Dates string::")
+    print(date_str)
+    month_dropdown.select_by_visible_text(date_str)
     # 4. Select welded points/IDs for the latest month
     for welded_pt in welded_pt_to_meters.keys():
         print(f"{welded_pt}: ", end='', flush=True)
