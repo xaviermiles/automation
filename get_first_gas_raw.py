@@ -1,6 +1,7 @@
 import os
 import re
-from datetime import datetime
+from time import sleep
+from datetime import datetime, timedelta
 
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
@@ -37,7 +38,7 @@ def by_largest_users():
             ).group(1)
             break
     if section_num is None:
-        raise NotImplementedError("Section with Maui SQMQ reports not found.")
+        raise ValueError("Section with Maui SQMQ reports not found.")
     
     latest_report = driver.find_elements_by_xpath(
         f"//table[@id = 'DocumentCategoryDataList__ctl{section_num}_DocumentDataList']"
@@ -84,22 +85,16 @@ def by_selected_major_users():
     driver.find_element_by_id('NGCIX').click()
     # 2. Select 'Daily Delivery Report (DDR) Details Page'
     driver.find_element_by_id('DDRReportLinkButton').click()
-    # 3. Select the latest month
+    # 3. Select the previous/second-most-recent month
     month_dropdown = Select(driver.find_element_by_id('MonthDropDown'))
-    dates = [datetime.strptime(l.text, "%b %Y") for l in month_dropdown.options
-             if l.text]
-    latest_date = max(dates)
-    #latest_date = sorted(dates)[-2]
-    latest_date_str = datetime.strftime(latest_date, '%b %Y')
-    # get current datetime
-    current_month = datetime.today().strftime('%b %Y')
-    if(current_month == latest_date_str):
-        date_str = datetime.strftime(sorted(dates)[-2], '%b %Y')
-    else:
-        date_str = datetime.strftime(latest_date, '%b %Y')
-    print("Dates string::")
-    print(date_str)
-    month_dropdown.select_by_visible_text(date_str)
+    previous_month_dt = datetime.today().replace(day=1) - timedelta(days=1)
+    previous_month_str = datetime.strftime(previous_month_dt, '%b %Y')
+    try:
+        month_dropdown.select_by_visible_text(previous_month_str)
+    except NoSuchElementException:
+        raise NoSuchElementException(
+            f"Previous month ({previous_month_str}) not an option."
+        )
     # 4. Select welded points/IDs for the latest month
     for welded_pt in welded_pt_to_meters.keys():
         print(f"{welded_pt}: ", end='', flush=True)
@@ -111,6 +106,7 @@ def by_selected_major_users():
                         EC.presence_of_element_located((By.ID, 'WeldedPointCodes'))
                     )
                 )
+                sleep(0.1)  # website loads weirdly/slow sometimes
                 welded_pt_dropdown.select_by_visible_text(welded_pt)
                 meter_dropdown = Select(
                     WebDriverWait(driver, 2).until(
@@ -119,7 +115,7 @@ def by_selected_major_users():
                 )
                 meter_dropdown.select_by_visible_text(meter)
             except TimeoutException:
-                raise NotImplementedError("Page has changed or is very slow to load")
+                raise TimeoutException("Page has changed or is very slow to load")
             # Download the data for each meter, replacing the previous versions
             download_fpath = os.path.join(SAVE_DIR, f"DDR{meter}.csv")
             if os.path.exists(download_fpath):
