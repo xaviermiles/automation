@@ -128,7 +128,7 @@ def by_selected_major_users():
     
 
 if __name__ == "__main__":
-    SAVE_DIR = os.path.join(os.getcwd(), 'covid_portal_raw', 'First Gas')
+    SAVE_DIR = os.path.join(os.getcwd(), 'data', 'covid_portal_raw')
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
     

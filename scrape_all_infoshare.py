@@ -181,7 +181,7 @@ def navigate_mainpage(save_dir):
 
 
 if __name__ == "__main__":
-    SAVE_DIR = os.path.join(os.getcwd(), "infoshare_downloads")
+    SAVE_DIR = os.path.join(os.getcwd(), 'data', 'all_infoshare')
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
     

@@ -3,5 +3,4 @@ __pycache__/
 geckodriver.log
 geckodriver*.tar.gz
 
-infoshare_downloads/
-covid_portal_raw/
+data/

@@ -248,7 +248,7 @@ def get_card_transaction_spend_by_industry():
 
 
 if __name__ == "__main__":
-    SAVE_DIR = os.path.join(os.getcwd(), 'covid_portal_raw', 'Infoshare') 
+    SAVE_DIR = os.path.join(os.getcwd(), 'data', 'covid_portal_raw')
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
     
@@ -256,4 +256,3 @@ if __name__ == "__main__":
     get_sea_cargo()
     get_card_transaction_total_spend()
     get_card_transaction_spend_by_industry()
-    
