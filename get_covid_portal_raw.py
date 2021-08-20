@@ -270,8 +270,8 @@ if __name__ == "__main__":
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
     
-    # by_largest_users()
-    # by_selected_major_users()
+    by_largest_users()
+    by_selected_major_users()
     
     get_air_cargo()
     get_sea_cargo()
