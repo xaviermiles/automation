@@ -103,7 +103,7 @@ def by_selected_major_users():
             print(f"{meter}, ", end='', flush=True)
             try:
                 _ = WebDriverWait(driver, 2).until(
-                    EC.visibility_of_element_located((By.XPATH, 
+                    EC.presence_of_element_located((By.XPATH, 
                         "//select[@id = 'WeldedPointCodes']/option"
                     ))
                 )

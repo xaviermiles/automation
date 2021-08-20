@@ -35,8 +35,8 @@ def navigate_to_dataset(driver, dataset_ref):
     try:
         category_elem = WebDriverWait(driver, 2).until(
             EC.presence_of_element_located((By.XPATH,
-              "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest') "
-              f"and contains(text(), '{category}')]"
+                "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest') "
+                f"and contains(text(), '{category}')]"
             ))
         )
     except TimeoutException:
@@ -47,7 +47,7 @@ def navigate_to_dataset(driver, dataset_ref):
         group_elem = WebDriverWait(driver, 2).until(
             EC.presence_of_element_located((By.XPATH,
                 "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest') "
-                    f"and contains(text(), '{group}')]"
+                f"and contains(text(), '{group}')]"
             ))
         )
     except TimeoutException:
@@ -73,6 +73,14 @@ def make_infoshare_selections(driver, title_to_options, dataset_name, save_dir):
     Selects infoshare options according to 'title_to_options' dictionary. Then
     downloads the dataset using download_dataset().
     """
+    try:
+        _ = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.CLASS_NAME, 
+                'FunctionalArea_SelectVariablesBlock'
+            ))
+        )
+    except TimeoutException:
+        raise TimeoutException("Select-Variable-Blocks not found.")
     select_var_boxes = driver.find_elements_by_xpath(
         "//td[@class = 'FunctionalArea_SelectVariablesBlock']"
         "//td[contains(@id, 'headerRow')]"
