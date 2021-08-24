@@ -92,16 +92,20 @@ def make_infoshare_selections(driver, title_to_options, dataset_name, save_dir):
             "../../..//select[contains(@id, 'lbVariableOptions')]"
         ))
         
-        options_dt_check = re.match('USE_LATEST_DATETIME<(.*)>', options[0])
-        if options_dt_check:
-            dt_format = options_dt_check.group(1)
-            options_dt = [datetime.strptime(o.text, dt_format)
-                          for o in select_elem.options if o.text]
-            latest_dt_str = datetime.strftime(max(options_dt), dt_format)
-            select_elem.select_by_visible_text(latest_dt_str)
-        else:
+        if isinstance(options, list):
             for opt in options:
                 select_elem.select_by_visible_text(opt)
+        elif isinstance(options, str):
+            options_dt_check = re.match('USE_LATEST_DATETIME<(.*)>', options)
+            if options_dt_check:
+                dt_format = options_dt_check.group(1)
+                options_dt = [datetime.strptime(o.text, dt_format)
+                              for o in select_elem.options if o.text]
+                latest_dt_str = datetime.strftime(max(options_dt), dt_format)
+                select_elem.select_by_visible_text(latest_dt_str)
+            elif options == "ALL":
+                for i in range(len(select_elem.options)):
+                    select_elem.select_by_index(i)
     
     driver = download_dataset(driver, dataset_name, save_dir)
     return driver
@@ -128,10 +132,15 @@ def download_dataset(driver, dataset_name, save_dir):
 
 def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir):
     """
-    To use most recent period for a 'Time' selection, set the corresponding
-    value in 'title_to_options' dictionary to a list[str] of length one
-    with the (single) element 'USE_LATEST_DATETIME<***>' where *** is the
-    datetime format of the infoshare options.
+    Selects infoshare options according to 'title_to_options' dictionary, which
+    maps title of variable box (str) to options to select (list[str] OR str).
+    
+    Acceptable formats for options:
+      - list[str] of specific options to select.
+      - 'USE_LATEST_DATETIME<***>' (str) for selecting latest Time period, 
+        where ** is the date format of the Infoshare options 
+        (eg 'USE_LATEST_DATETIME<%YM%m>' would work for '2021M06').
+      - 'ALL' will select all available options.
     
     dataset_name should not include file extension; this is added later (.csv)
     """

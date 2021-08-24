@@ -157,7 +157,7 @@ def get_air_cargo():
                 title_to_options={
                     'New Zealand Port': ['Christchurch Airport'],
                     'Observations': [observation],
-                    'Time': ['USE_LATEST_DATETIME<%YM%m>']
+                    'Time': 'USE_LATEST_DATETIME<%YM%m>'
                 },
                 dataset_name=f"air_cargo_{dataset}_{suffix}",
                 save_dir=SAVE_DIR
@@ -189,7 +189,7 @@ def get_sea_cargo():
                         'Port Chalmers (sea)','Tauranga (sea)','Wellington (sea)'
                     ],
                     'Observations': [observation],
-                    'Time': ['USE_LATEST_DATETIME<%YM%m>']
+                    'Time': 'USE_LATEST_DATETIME<%YM%m>'
                 },
                 dataset_name=f"sea_cargo_{dataset}_{suffix}",
                 save_dir=SAVE_DIR
@@ -207,7 +207,7 @@ def get_card_transaction_total_spend():
             title_to_options={
                 'Actual/Seasonally Adjusted/Trend': [treatment],
                 'Division': ['Total'],
-                'Time': ['USE_LATEST_DATETIME<%YM%m>']
+                'Time': 'USE_LATEST_DATETIME<%YM%m>'
             },
             dataset_name=f"card_transaction_total_spend_values_{treatment}",
             save_dir=SAVE_DIR
@@ -222,7 +222,7 @@ def get_card_transaction_total_spend():
         title_to_options={
             'Actual/Seasonally Adjusted/Trend': ['Actual'],
             'Division': ['Total'],
-            'Time': ['USE_LATEST_DATETIME<%YM%m>']
+            'Time': 'USE_LATEST_DATETIME<%YM%m>'
         },
         dataset_name='card_transaction_total_spend_number_Actual',
         save_dir=SAVE_DIR
@@ -241,7 +241,7 @@ def get_card_transaction_spend_by_industry():
             title_to_options={
                 'Actual/Seasonally Adjusted/Trend': [treatment],
                 'Division': ['RTS total industries'],
-                'Time': ['USE_LATEST_DATETIME<%YM%m>']
+                'Time': 'USE_LATEST_DATETIME<%YM%m>'
             },
             dataset_name=f"card_transaction_spend_by_industry_total_{treatment}",
             save_dir=SAVE_DIR
@@ -258,7 +258,7 @@ def get_card_transaction_spend_by_industry():
                 title_to_options={
                     'Actual/Seasonally Adjusted/Trend': [treatment],
                     'Industry Group': [industry],
-                    'Time': ['USE_LATEST_DATETIME<%YM%m>']
+                    'Time': 'USE_LATEST_DATETIME<%YM%m>'
                 },
                 dataset_name=f"card_transaction_spend_by_industry_{industry}_{treatment}",
                 save_dir=SAVE_DIR
