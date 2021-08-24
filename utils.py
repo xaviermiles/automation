@@ -34,7 +34,7 @@ def navigate_to_dataset(driver, dataset_ref):
     category_elem = WebDriverWait(driver, 2).until(
         EC.presence_of_element_located((By.XPATH,
             "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest') "
-            f"and contains(text(), '{category}')]DUMB"
+            f"and contains(text(), '{category}')]"
         )),
         message=f"'{category}' folder not found."
     )
@@ -43,9 +43,9 @@ def navigate_to_dataset(driver, dataset_ref):
     group_elem = WebDriverWait(driver, 2).until(
         EC.presence_of_element_located((By.XPATH,
             "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest') "
-            f"and contains(text(), '{group}')]",
-            message=f"'{group}' folder not found."
-        ))
+            f"and contains(text(), '{group}')]"
+        )),
+        message=f"'{group}' folder not found."
     )
     group_elem.click()
     
@@ -99,7 +99,7 @@ def make_infoshare_selections(driver, title_to_options, dataset_name, save_dir,
                 for i in range(len(select_elem.options)):
                     select_elem.select_by_index(i)
     
-    driver = download_dataset(driver, dataset_name, save_dir)
+    driver = download_dataset(driver, dataset_name, save_dir, show_status_flags)
     return driver
 
 
