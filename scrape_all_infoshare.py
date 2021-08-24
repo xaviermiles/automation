@@ -35,14 +35,12 @@ def get_num_fl_folders():
 # Workhorse functions
 def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
     tl_elem.click()  # navigate to Search tab
-    try:
-        _ = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, 
-                'ctl00_MainContent_tblVariableSelectors'
-            ))
-        )
-    except TimeoutException:
-        raise NotImplementedError("page didn't load :(")
+    _ = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, 
+            'ctl00_MainContent_tblVariableSelectors'
+        )),
+        message="page didn't load :("
+    )
     
     select_all_ids = [e.get_attribute('id') for e in driver.find_elements_by_xpath(
         "//table[@id = 'ctl00_MainContent_tblVariableSelectors']"
@@ -52,14 +50,12 @@ def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
         elem = driver.find_element_by_id(select_all_id)
         elem.click()
     
-    try:
-        go = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.ID,
-                'ctl00_MainContent_btnGo'
-            ))
-        )
-    except TimeoutException:
-        raise TimeoutException("Can't find the Go button.")
+    go = WebDriverWait(driver, 2).until(
+        EC.presence_of_element_located((By.ID,
+            'ctl00_MainContent_btnGo'
+        )),
+        message="Can't find the Go button."
+    )
     go.click()  # navigate to View table page
     
     # Saves data and metadata together in one CSV:
@@ -71,14 +67,12 @@ def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
 #     os.rename(fpath, f"{save_dir}/{dataset_name}.csv")
     
     # Save data and metadata in different files:
-    try:
-        _ = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.XPATH, 
-                "//table[@class = 'pxtable']"
-            ))
-        )
-    except TimeoutException:
-        raise TimeoutException("Data and metadata tables not loading.")
+    _ = WebDriverWait(driver, 2).until(
+        EC.presence_of_element_located((By.XPATH, 
+            "//table[@class = 'pxtable']"
+        )),
+        message="Data and metadata tables not loading."
+    )
     
     tables = driver.find_elements_by_xpath("//table[@class = 'pxtable']")
     data = tables[0].get_attribute('outerHTML')
@@ -95,16 +89,14 @@ def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
         f.write(meta_text)
     
     # Return to original page
-    try:
-        browse = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.XPATH,
-                "//table[@id = 'navigation']"
-                "//a[@id = 'ctl00_headerUserControl_browseHyperlink']"
-            ))
-        )
-        browse.click()
-    except TimeoutException:
-        raise NotImplementedError("Can't find browse button.")
+    browse = WebDriverWait(driver, 2).until(
+        EC.presence_of_element_located((By.XPATH,
+            "//table[@id = 'navigation']"
+            "//a[@id = 'ctl00_headerUserControl_browseHyperlink']"
+        )),
+        message="Can't find browse button."
+    )
+    browse.click()
         
     return driver
 

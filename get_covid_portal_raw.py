@@ -3,7 +3,6 @@ import os
 import re
 from datetime import datetime, timedelta
 
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -101,28 +100,27 @@ def by_selected_major_users():
         print(f"{welded_pt}: ", end='', flush=True)
         for meter in welded_pt_to_meters[welded_pt]:
             print(f"{meter}, ", end='', flush=True)
-            try:
-                _ = WebDriverWait(driver, 2).until(
-                    EC.presence_of_element_located((By.XPATH, 
-                        "//select[@id = 'WeldedPointCodes']/option"
-                    ))
-                )
-                welded_pt_dropdown = Select(
-                    driver.find_element_by_id('WeldedPointCodes')
-                )
-                welded_pt_dropdown.select_by_visible_text(welded_pt)
+            _ = WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.XPATH,
+                    "//select[@id = 'WeldedPointCodes']/option"
+                )),
+                message="Welded pts dropdown not found."
+            )
+            welded_pt_dropdown = Select(
+                driver.find_element_by_id('WeldedPointCodes')
+            )
+            welded_pt_dropdown.select_by_visible_text(welded_pt)
                 
-                _ = WebDriverWait(driver, 2).until(
-                    EC.presence_of_element_located((By.XPATH,
-                        "//select[@id = 'MeterGroupCodes']/option"
-                    ))
-                )
-                meter_dropdown = Select(
-                    driver.find_element_by_id('MeterGroupCodes')
-                )
-                meter_dropdown.select_by_visible_text(meter)
-            except TimeoutException:
-                raise TimeoutException("Page has changed or is very slow to load")
+            _ = WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.XPATH,
+                    "//select[@id = 'MeterGroupCodes']/option"
+                )),
+                message="Meter dropdown not found."
+            )
+            meter_dropdown = Select(
+                driver.find_element_by_id('MeterGroupCodes')
+            )
+            meter_dropdown.select_by_visible_text(meter)
             # Download the data for each meter, replacing the previous versions
             download_fpath = os.path.join(SAVE_DIR, f"DDR{meter}.csv")
             if os.path.exists(download_fpath):

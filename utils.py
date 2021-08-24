@@ -5,7 +5,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -32,37 +31,31 @@ def get_firefox_driver(save_dir, download_filetypes):
 # Functions to download specified datasets from infoshare
 def navigate_to_dataset(driver, dataset_ref):
     category, group, dataset = dataset_ref
-    try:
-        category_elem = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.XPATH,
-                "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest') "
-                f"and contains(text(), '{category}')]"
-            ))
-        )
-    except TimeoutException:
-        raise TimeoutException(f"'{category}' folder not found.")
+    category_elem = WebDriverWait(driver, 2).until(
+        EC.presence_of_element_located((By.XPATH,
+            "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest') "
+            f"and contains(text(), '{category}')]DUMB"
+        )),
+        message=f"'{category}' folder not found."
+    )
     category_elem.click()
     
-    try:
-        group_elem = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.XPATH,
-                "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest') "
-                f"and contains(text(), '{group}')]"
-            ))
-        )
-    except TimeoutException:
-        raise TimeoutException(f"'{group}' folder not found.")
+    group_elem = WebDriverWait(driver, 2).until(
+        EC.presence_of_element_located((By.XPATH,
+            "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest') "
+            f"and contains(text(), '{group}')]",
+            message=f"'{group}' folder not found."
+        ))
+    )
     group_elem.click()
     
-    try:
-        dataset_elem = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.XPATH,
-                "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest')]"
-                f"/u[contains(text(), '{dataset}')]"
-            ))
-        )
-    except TimeoutException:
-        raise TimeoutException(f"'{dataset}' link not found.")
+    dataset_elem = WebDriverWait(driver, 2).until(
+        EC.presence_of_element_located((By.XPATH,
+            "//a[starts-with(@id, 'ctl00_MainContent_tvBrowseNodest')]"
+            f"/u[contains(text(), '{dataset}')]"
+        )),
+        message=f"'{dataset}' link not found."
+    )
     dataset_elem.click()
     
     return driver
@@ -73,14 +66,12 @@ def make_infoshare_selections(driver, title_to_options, dataset_name, save_dir):
     Selects infoshare options according to 'title_to_options' dictionary. Then
     downloads the dataset using download_dataset().
     """
-    try:
-        _ = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.CLASS_NAME, 
-                'FunctionalArea_SelectVariablesBlock'
-            ))
-        )
-    except TimeoutException:
-        raise TimeoutException("Select-Variable-Blocks not found.")
+    _ = WebDriverWait(driver, 2).until(
+        EC.presence_of_element_located((By.CLASS_NAME, 
+            'FunctionalArea_SelectVariablesBlock'
+        )),
+        message="Select-Variable-Blocks not found."
+    )
     select_var_boxes = driver.find_elements_by_xpath(
         "//td[@class = 'FunctionalArea_SelectVariablesBlock']"
         "//td[contains(@id, 'headerRow')]"
@@ -112,14 +103,12 @@ def make_infoshare_selections(driver, title_to_options, dataset_name, save_dir):
 
 
 def download_dataset(driver, dataset_name, save_dir):
-    try:
-        go = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.ID,
-                'ctl00_MainContent_btnGo'
-            ))
-        )
-    except TimeoutException:
-        raise TimeoutException("Can't find the Go button.")
+    go = WebDriverWait(driver, 2).until(
+        EC.presence_of_element_located((By.ID,
+            'ctl00_MainContent_btnGo'
+        )),
+        message="Can't find the Go button."
+    )
     go.click()
     # first 'pxtable' is data, second is metadata
     data = driver.find_element_by_xpath("//table[@class = 'pxtable']")
