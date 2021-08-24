@@ -61,7 +61,8 @@ def navigate_to_dataset(driver, dataset_ref):
     return driver
 
 
-def make_infoshare_selections(driver, title_to_options, dataset_name, save_dir):
+def make_infoshare_selections(driver, title_to_options, dataset_name, save_dir,
+                              show_status_flags):
     """
     Selects infoshare options according to 'title_to_options' dictionary. Then
     downloads the dataset using download_dataset().
@@ -102,7 +103,7 @@ def make_infoshare_selections(driver, title_to_options, dataset_name, save_dir):
     return driver
 
 
-def download_dataset(driver, dataset_name, save_dir):
+def download_dataset(driver, dataset_name, save_dir, show_status_flags):
     go = WebDriverWait(driver, 2).until(
         EC.presence_of_element_located((By.ID,
             'ctl00_MainContent_btnGo'
@@ -110,6 +111,16 @@ def download_dataset(driver, dataset_name, save_dir):
         message="Can't find the Go button."
     )
     go.click()
+    
+    if show_status_flags:
+        edit_table = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.ID,
+                'ctl00_MainContent_dlEditOptions'
+            )),
+            message="'Edit table' dropdown not found."
+        )
+        Select(edit_table).select_by_visible_text('Show status flags')
+    
     # first 'pxtable' is data, second is metadata
     data = driver.find_element_by_xpath("//table[@class = 'pxtable']")
     data_soup = BeautifulSoup(data.get_attribute('outerHTML'), 'html.parser')
@@ -119,7 +130,8 @@ def download_dataset(driver, dataset_name, save_dir):
     return driver
 
 
-def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir):
+def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir,
+                          show_status_flags=False):
     """
     Selects infoshare options according to 'title_to_options' dictionary, which
     maps title of variable box (str) to options to select (list[str] OR str).
@@ -138,5 +150,6 @@ def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir)
     driver.get("http://infoshare.stats.govt.nz/")
     driver = navigate_to_dataset(driver, dataset_ref)
     driver = make_infoshare_selections(driver, title_to_options,
-                                       dataset_name, save_dir)
+                                       dataset_name, save_dir,
+                                       show_status_flags)
     driver.quit()
