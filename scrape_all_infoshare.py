@@ -36,7 +36,7 @@ def get_num_fl_folders():
 def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
     tl_elem.click()  # navigate to Search tab
     try:
-        yes = WebDriverWait(driver, 10).until(
+        _ = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.ID, 
                 'ctl00_MainContent_tblVariableSelectors'
             ))
