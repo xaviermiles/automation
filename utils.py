@@ -72,7 +72,7 @@ def make_infoshare_selections(driver,
     Selects infoshare options according to 'title_to_options' dictionary. Then
     downloads the dataset using download_dataset().
     """
-    _ = WebDriverWait(driver, 2).until(
+    _ = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CLASS_NAME, 
             'FunctionalArea_SelectVariablesBlock'
         )),
@@ -181,6 +181,13 @@ def download_dataset(driver, dataset_name, save_dir, show_status_flags):
             message="'Edit table' dropdown not found."
         )
         Select(edit_table).select_by_visible_text('Show status flags')
+        # Wait until associated text has disappeared
+        _ = WebDriverWait(driver, 2).until_not(
+            EC.text_to_be_present_in_element(
+                (By.CLASS_NAME, 'footnote'), 'Status flags are not displayed'
+            ),
+            message="Status flags text won't disappear."
+        )
     
     # first 'pxtable' is data, second is metadata
     data = driver.find_element_by_xpath("//table[@class = 'pxtable']")
