@@ -1,13 +1,13 @@
+#!/usr/bin/env Rscript
 # Checks if API and Infoshare versions are equivalent
-library(tidyverse)
-library(lubridate)
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(lubridate)
+  library(jsonlite)
+  library(optparse)
+})
 
-data_folder = "data/api_checks"
-api_to_infoshare <- c(
-  "ITM441AA.csv" = "tourism1.csv",
-  "ITM441AA-All.csv" = "tourism-all.csv"
-)
-
+# Helper functions
 parse_yearmon_col <- function(yearmon_col) {
   yearmon_col %>%
     map_dbl(function(yearmon_str) {
@@ -27,9 +27,36 @@ parse_value_for_number <- function(raw_value) {
     suppressWarnings()
 }
 
-for (api_fname in names(api_to_infoshare)) {
-  infoshare_fname = api_to_infoshare[api_fname]
-  print(paste(api_fname, "=?=", infoshare_fname))
+# Read command line arguments
+args_list <- list(
+  make_option(c("-d", "--data_folder"), type="character", default=NULL, 
+              help="directory where the files are saved", 
+              metavar="character"),
+  make_option(c("-c", "--comparisons"), type="character", default=NULL, 
+              help="json string with filenames for each dataset", 
+              metavar="character")
+)
+cmd_line_args <- args_list %>%
+  OptionParser(option_list=.) %>%
+  parse_args()
+data_folder <- cmd_line_args$data_folder
+if (is.null(data_folder)) {
+  stop("Please supply script argument: '--data_folder'")
+}
+tryCatch(
+  { datasets_info <- fromJSON(cmd_line_args$comparisons) },
+  error = function(e) {stop("'--comparisons' should be a JSON-style string")}
+)
+# TODO: check JSON structure
+# if (???) {
+#   stop("'--comparisons' JSON-string is incorrectly formatted")
+# }
+
+# Do comparing
+results = list()
+for (dataset_name in names(datasets_info)) {
+  api_fname = datasets_info[[dataset_name]][['api_fname']]
+  infoshare_fname = datasets_info[[dataset_name]][['infoshare_fname']]
   
   api_copy <- api_fname %>%
     file.path(data_folder, .) %>%
@@ -45,17 +72,15 @@ for (api_fname in names(api_to_infoshare)) {
   infoshare <- infoshare_fname %>%
     file.path(data_folder, .) %>%
     read_csv(col_types = cols())
-  
-  # Concatenate header rows into a single row
+  # Pivot Infoshare dataset from multi-level-header wide dataset to long format.
+  # NB: Filters out any non-confidential ('C') rows with Value = NA as the API 
+  # copy omits these rows for simplicity.
   names(infoshare) <-
     lapply(1:3, function(i) {as_vector(infoshare[i, -1])}) %>%
     c(., sep = "__") %>%
     do.call(paste, .) %>%
     c("Period", .)
   infoshare <- infoshare[-(1:num_header_rows), ]
-  # Pivot to long format, then split raw-value into numeric-value and status.
-  # Filter out any non-confidential ('C') rows with Value = NA as the API copy 
-  # omits these rows for simplicity.
   infoshare_long <- infoshare %>%
     gather(variable, Value, -Period) %>%
     separate(variable, paste0("Label", 1:num_header_rows), sep="__") %>%
@@ -75,5 +100,14 @@ for (api_fname in names(api_to_infoshare)) {
   # Check equivalency of dataframes
   api_subset <- api_copy[, names(infoshare_long)]
   diff = setdiff(api_subset, infoshare_long)
-  print(nrow(api_subset) == nrow(infoshare_long) && nrow(diff) == 0)
+  equivalent = (nrow(api_subset) == nrow(infoshare_long) && nrow(diff) == 0)
+
+  results[[dataset_name]] <- list(
+    api_fname = api_fname,
+    infoshare_fname = infoshare_fname,
+    equivalent = equivalent
+  )
 }
+
+# Return results
+print(toJSON(results, auto_unbox=TRUE))

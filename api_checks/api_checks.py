@@ -1,10 +1,9 @@
 """
 For checking the consistency between Infoshare data and the equivalent data
-pulled from the Stats NZ API
-
-TODO: integrate the R script with this script
+pulled from the Stats NZ API.
 """
-import os
+import os, subprocess
+import json
 
 import numpy as np
 import pandas as pd
@@ -35,7 +34,7 @@ def tourism1(save_dir):
     )
     
     
-def tourism_all(save_dir, dataset_name):
+def tourism_all(save_dir):
     # For entire dataset
     utils.get_infoshare_dataset(
         dataset_ref=(
@@ -54,6 +53,21 @@ def tourism_all(save_dir, dataset_name):
         show_status_flags=True
     )
     
+    
+def compare_datasets(datasets_info, data_folder):
+    try:
+        r = subprocess.check_output([
+            "Rscript", "--vanilla", "compare.R",
+            "--data_folder", data_folder,
+            "--comparisons", json.dumps(datasets_info)
+        ])
+    except subprocess.CalledProcessError:
+        return
+    
+    results = json.loads(r.decode())
+    for dataset_name, info in results.items():
+        print(dataset_name, '??', info['equivalent'])
+
 
 def compare(api_fpath, infoshare_fpath, infoshare_header_idxs):
     """
@@ -105,9 +119,20 @@ if __name__ == "__main__":
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     
-    # Download dataset
-    tourism_all(save_dir, "tourism-all")
+    dataset_to_api = {
+        'tourism1': 'ITM441AA.csv',
+        # 'tourism-all': 'ITM441AA.csv',
+    }
     
-    # compare("data/api_checks/ITM441AA-All.csv", 
-    #         "data/api_checks/tourism-all.csv",
-    #         [1,2,3])
+    # Download Infoshare datasets
+    print("Downloading from Infoshare:")
+    tourism1(save_dir)
+    # tourism_all(save_dir)
+    
+    # Make comparisons
+    datasets_info = {
+        dataset: {'api_fname': api_fname, 'infoshare_fname': f'{dataset}.csv'} 
+        for dataset, api_fname in dataset_to_api.items()
+    }
+    print("\nComparisons:")
+    compare_datasets(datasets_info, save_dir)
