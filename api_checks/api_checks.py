@@ -101,7 +101,7 @@ def compare(api_fpath, infoshare_fpath, infoshare_header_idxs):
 
 
 if __name__ == "__main__":
-    save_dir = "data/api_checks"
+    save_dir = "../data/api_checks"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     

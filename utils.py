@@ -8,6 +8,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -165,7 +166,7 @@ def download_dataset(driver, dataset_name, save_dir, show_status_flags):
     go.click()
     
     try:
-        _ = WebDriverWait(driver, 2).until(
+        _ = WebDriverWait(driver, 1).until(
             EC.alert_is_present()
         )
         alert = driver.switch_to.alert
