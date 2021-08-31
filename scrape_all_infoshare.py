@@ -115,13 +115,13 @@ def navigate_mainpage(save_dir):
         try:
             fl_elem = driver.find_element_by_xpath(
                 "//div[@id = 'ctl00_MainContent_tvBrowseNodes']"
-                f"//a[@id = 'ctl00_MainContent_tvBrowseNodest{i}']"
+                f"//a[@id = 'ctl00_MainContent_tvBrowseNodest{fl_num}']"
             )
         except NoSuchElementException:
             print('y1')
             break  # no more first-level elements
         fl_name = fl_elem.text
-        print(i, fl_name)
+        print(fl_num, fl_name)
         fl_elem.click()
         i = fl_num + 1
 
