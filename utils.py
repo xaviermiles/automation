@@ -92,11 +92,16 @@ def make_infoshare_selections(driver,
     # to chunk the requests and merge the resulting CSVs.
     NUM_CELLS_PER_CHUNK = 50000
     # Convert any options="ALL" into explicit list of options
+    # OR title_to_options="ALL" into dict with explicit lists of options
     title_to_options_explicit = {}
     for box in select_var_boxes:
         title = box.find_element_by_xpath("./h6").text
-        options = title_to_options[title]
-        if title_to_options[title] == 'ALL':
+        if title_to_options == 'ALL':
+            options = 'ALL'
+        else:
+            options = title_to_options[title]
+        
+        if options == 'ALL':
             select_elem = Select(box.find_element_by_xpath(
                 "../../..//select[contains(@id, 'lbVariableOptions')]"
             ))
@@ -135,7 +140,7 @@ def make_infoshare_selections(driver,
         
     for box in select_var_boxes:
         title = box.find_element_by_xpath("./h6").text
-        options = title_to_options[title]
+        options = title_to_options_explicit[title]
         select_elem = Select(box.find_element_by_xpath(
             "../../..//select[contains(@id, 'lbVariableOptions')]"
         ))
@@ -144,16 +149,13 @@ def make_infoshare_selections(driver,
             for opt in options:
                 select_elem.select_by_visible_text(opt)
         elif isinstance(options, str):
-            options_dt_check = re.match('USE_LATEST_DATETIME<(.*)>', options)
-            if options_dt_check:
-                dt_format = options_dt_check.group(1)
-                options_dt = [datetime.strptime(o.text, dt_format)
-                              for o in select_elem.options if o.text]
-                latest_dt_str = datetime.strftime(max(options_dt), dt_format)
-                select_elem.select_by_visible_text(latest_dt_str)
-            elif options == "ALL":
-                for i in range(len(select_elem.options)):
-                    select_elem.select_by_index(i)
+            # USE_LATEST_DATETIME should be the only str since this is using
+            # title_to_options_explicit
+            dt_format = re.match('USE_LATEST_DATETIME<(.*)>', options).group(1)
+            options_dt = [datetime.strptime(opt.text, dt_format)
+                          for opt in select_elem.options if opt.text]
+            latest_dt_str = datetime.strftime(max(options_dt), dt_format)
+            select_elem.select_by_visible_text(latest_dt_str)
     
     driver = download_dataset(driver, dataset_name, save_dir, show_status_flags)
     return driver
@@ -261,6 +263,8 @@ def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir,
     """
     Selects infoshare options according to 'title_to_options' dictionary, which
     maps title of variable box (str) to options to select (list[str] OR str).
+    Alternatively, title_to_options='ALL' (str) will select all options for all
+    variables.
     
     Acceptable formats for options:
       - list[str] of specific options to select.
@@ -268,6 +272,8 @@ def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir,
         where ** is the date format of the Infoshare options 
         (eg 'USE_LATEST_DATETIME<%YM%m>' would work for '2021M06').
       - 'ALL' will select all available options.
+      
+    TODO: allow for nth most recent datetime?? or the n most recent datetimes??
     
     dataset_name should not include file extension; this is added later (.csv)
     """
