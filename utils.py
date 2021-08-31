@@ -1,4 +1,4 @@
-import os
+import os, inspect
 import csv
 import re
 from datetime import datetime
@@ -28,7 +28,10 @@ def get_firefox_driver(save_dir, download_filetypes):
     profile.set_preference("browser.helperApps.neverAsk.saveToDisk", 
                            ','.join(download_filetypes))
 
-    driver = webdriver.Firefox(options=opts, firefox_profile=profile)
+    this_fpath = os.path.abspath(__file__)
+    gecko_fpath = os.path.join(os.path.dirname(this_fpath), 'geckodriver.log')
+    driver = webdriver.Firefox(options=opts, firefox_profile=profile,
+                               log_path=gecko_fpath)
     return driver
 
 
