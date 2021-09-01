@@ -6,7 +6,6 @@ details. (It is acting like a depth-first search.)
 Then it uses utils.get_infoshare_dataset to download the datasets.
 
 TODO:
-    - get_metadata=True argument in utils.get_infoshare_dataset()
     - custom functions for special-case datasets
 """
 import os
@@ -129,8 +128,8 @@ def scrape_all_infoshare(save_dir):
             title_to_options='ALL',
             dataset_name='__'.join(dataset_ref).replace('/', ' '),
             save_dir=save_dir,
-            show_status_flags=True
-            # get_metadata=True  # NOT IMPLEMENTED YET
+            show_status_flags=True,
+            get_metadata=True
         )
     print("\nSCRAPED ALL")
 

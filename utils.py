@@ -71,7 +71,8 @@ def navigate_to_dataset(driver, dataset_ref):
 def make_infoshare_selections(driver, 
                               dataset_ref, title_to_options, 
                               dataset_name, save_dir,
-                              show_status_flags):
+                              show_status_flags,
+                              get_metadata):
     """
     Selects infoshare options according to 'title_to_options' dictionary. Then
     downloads the dataset using download_dataset().
@@ -135,7 +136,8 @@ def make_infoshare_selections(driver,
         driver.quit()
         get_chunked_infoshare_dataset(dataset_ref, chunked_title_to_options, 
                                       dataset_name, save_dir, 
-                                      show_status_flags)
+                                      show_status_flags,
+                                      get_metadata)
         return  # exit original stack
         
     for box in select_var_boxes:
@@ -157,11 +159,13 @@ def make_infoshare_selections(driver,
             latest_dt_str = datetime.strftime(max(options_dt), dt_format)
             select_elem.select_by_visible_text(latest_dt_str)
     
-    driver = download_dataset(driver, dataset_name, save_dir, show_status_flags)
+    driver = download_dataset(driver, dataset_name, save_dir,
+                              show_status_flags, get_metadata)
     return driver
 
 
-def download_dataset(driver, dataset_name, save_dir, show_status_flags):
+def download_dataset(driver, dataset_name, save_dir,
+                     show_status_flags, get_metadata):
     go = WebDriverWait(driver, 2).until(
         EC.presence_of_element_located((By.ID,
             'ctl00_MainContent_btnGo'
@@ -195,18 +199,31 @@ def download_dataset(driver, dataset_name, save_dir, show_status_flags):
             message="Status flags text won't disappear."
         )
     
+    tables = driver.find_elements_by_xpath("//table[@class = 'pxtable']")
     # first 'pxtable' is data, second is metadata
-    data = driver.find_element_by_xpath("//table[@class = 'pxtable']")
-    data_soup = BeautifulSoup(data.get_attribute('outerHTML'), 'html.parser')
+    data = tables[0].get_attribute('outerHTML')
+    data_soup = BeautifulSoup(data, 'html.parser')
     data_df = pd.read_html(str(data_soup))[0]
     data_df.to_csv(os.path.join(save_dir, f"{dataset_name}.csv"), index=False)
+    
+    if get_metadata:
+        meta = tables[1].find_element_by_xpath("//td[@class = 'footnote']") \
+                        .get_attribute('outerHTML')
+        meta_soup = BeautifulSoup(meta, 'html.parser')
+        meta_text = meta_soup.get_text(separator='\n')
+        meta_text_clean = re.sub('\n+', '\n', meta_text.strip())
+        if not meta_text_clean.endswith('\n'):
+            meta_text_clean += '\n'
+        with open(f"{save_dir}/{dataset_name}__meta.txt", 'w') as f:
+            f.write(meta_text_clean)
 
     return driver
 
 
 def get_chunked_infoshare_dataset(dataset_ref, chunked_title_to_options, 
                                   dataset_name, save_dir, 
-                                  show_status_flags):
+                                  show_status_flags,
+                                  get_metadata):
     """
     This function should not be directly called! It is used by
     get_infoshare_dataset() when necessary.
@@ -226,7 +243,8 @@ def get_chunked_infoshare_dataset(dataset_ref, chunked_title_to_options,
                               title_to_options_i,
                               f"{dataset_name}__temp{i}",
                               save_dir,
-                              show_status_flags=show_status_flags)
+                              show_status_flags=show_status_flags,
+                              get_metadata=get_metadata)
     
     # Currently only supports chunking on 'Time' variable
     assert chunked_title_to_options[0]['Time'] != chunked_title_to_options[1]['Time']
@@ -259,7 +277,7 @@ def get_chunked_infoshare_dataset(dataset_ref, chunked_title_to_options,
 
 
 def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir,
-                          show_status_flags=False):
+                          show_status_flags=False, get_metadata=False):
     """
     Selects infoshare options according to 'title_to_options' dictionary, which
     maps title of variable box (str) to options to select (list[str] OR str).
@@ -284,6 +302,7 @@ def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir,
     driver = make_infoshare_selections(driver, 
                                        dataset_ref, title_to_options,
                                        dataset_name, save_dir,
-                                       show_status_flags)
+                                       show_status_flags,
+                                       get_metadata)
     if driver is not None:
         driver.quit()
