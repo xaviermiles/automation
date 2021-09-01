@@ -1,27 +1,27 @@
-# There is three levels - type, group, dataset
-# This script navigates all 3 levels to the next dataset and recursively breaks
-# back up to the next level (and looks for next element) until there is no 
-# first-level elements left.
-# >> It is acting like a depth-first search <<
+"""
+There is three levels in Infoshare - category, group, dataset
+This script navigates all 3 levels to the next dataset and recursively breaks
+back up to the next level (and looks for next element), recording the dataset
+details. (It is acting like a depth-first search.)
+Then it uses utils.get_infoshare_dataset to download the datasets.
 
-# To setup Firefox driver:
-# https://askubuntu.com/questions/870530/how-to-install-geckodriver-in-ubuntu
-
+TODO:
+    - get_metadata=True argument in utils.get_infoshare_dataset()
+    - custom functions for special-case datasets
+"""
 import os
 import csv
-import pandas as pd
-from bs4 import BeautifulSoup
 
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support.ui import WebDriverWait
 
 import utils
 
 
-def get_num_fl_folders():
-    driver = utils.get_firefox_driver(SAVE_DIR, ['text/csv'])
+def get_num_fl_folders(save_dir):
+    driver = utils.get_firefox_driver(save_dir, ['text/csv'])
     driver.get("http://infoshare.stats.govt.nz/")
     num_fl_folders = len(driver.find_elements_by_xpath(
         "//div[@id = 'ctl00_MainContent_tvBrowseNodes']"
@@ -32,105 +32,49 @@ def get_num_fl_folders():
     return num_fl_folders
 
 
-# Workhorse functions
-def get_info_from_dataset(driver, tl_elem, dataset_name, save_dir):
-    tl_elem.click()  # navigate to Search tab
-    _ = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, 
-            'ctl00_MainContent_tblVariableSelectors'
-        )),
-        message="page didn't load :("
-    )
+def find_all_datasets(save_dir):
+    """
+    An new browser/driver is required for each first-level folder since
+    Infoshare becomes slower (?) once there is a large number of second-level
+    folders open.
     
-    select_all_ids = [e.get_attribute('id') for e in driver.find_elements_by_xpath(
-        "//table[@id = 'ctl00_MainContent_tblVariableSelectors']"
-        "//span[substring(@id, string-length(@id) - string-length('SelectAll') + 1) = 'SelectAll']"
-    )]
-    for select_all_id in select_all_ids:
-        elem = driver.find_element_by_id(select_all_id)
-        elem.click()
-    
-    go = WebDriverWait(driver, 2).until(
-        EC.presence_of_element_located((By.ID,
-            'ctl00_MainContent_btnGo'
-        )),
-        message="Can't find the Go button."
-    )
-    go.click()  # navigate to View table page
-    
-    # Saves data and metadata together in one CSV:
-#     save_dropdown = Select(driver.find_element_by_id('ctl00_MainContent_dlSaveOptions'))
-#     save_dropdown.select_by_value('csv')
-#     print('Downloaded CSV, ', end="")
-#     # Change CSV to have meaningful (comes out coded by default)
-#     fpath = max([f"{save_dir}/{f}" for f in os.listdir(save_dir)], key=os.path.getctime)
-#     os.rename(fpath, f"{save_dir}/{dataset_name}.csv")
-    
-    # Save data and metadata in different files:
-    _ = WebDriverWait(driver, 2).until(
-        EC.presence_of_element_located((By.XPATH, 
-            "//table[@class = 'pxtable']"
-        )),
-        message="Data and metadata tables not loading."
-    )
-    
-    tables = driver.find_elements_by_xpath("//table[@class = 'pxtable']")
-    data = tables[0].get_attribute('outerHTML')
-    data_soup = BeautifulSoup(data, 'html.parser')
-    data_df = pd.read_html(str(data_soup))[0]
-    data_df.to_csv(f"{save_dir}/{dataset_name}.csv")
-    
-    meta = tables[1].find_element_by_xpath(
-        "//td[@class = 'footnote']"
-    ).get_attribute('outerHTML')
-    meta_soup = BeautifulSoup(meta, 'html.parser')
-    meta_text = meta_soup.get_text(separator='\n')
-    with open(f"{save_dir}/{dataset_name}__meta.txt", 'w') as f:
-        f.write(meta_text)
-    
-    # Return to original page
-    browse = WebDriverWait(driver, 2).until(
-        EC.presence_of_element_located((By.XPATH,
-            "//table[@id = 'navigation']"
-            "//a[@id = 'ctl00_headerUserControl_browseHyperlink']"
-        )),
-        message="Can't find browse button."
-    )
-    browse.click()
-        
-    return driver
-
-
-def navigate_mainpage(save_dir):
-    # Don't want to expand ALL folders in same driver instance because selenium
-    # has a maximum scrolling ability, so a new driver/browser is used when
-    # navigating each first-level folder.
-    num_fl_folders = get_num_fl_folders()
-    
-    data_ids = []
-    i = 0
+    The strings in fake_sl_names refer to datasets which are included in a 
+    first-level folder, rather than a second-level folder. Logic to handle these
+    is not yet implemented, but will probably need to be custom for each one.
+    """
+    fake_sl_names = [
+        "Harmonised Trade - Exports",
+        "Harmonised Trade - Imports",
+        "Harmonised Trade - Re-exports",
+        ("International Travel and Migration: To access tables, please "
+         "refer to this subject under the Tourism category.")
+    ]
+    print("--- Finding all datasets ---", end='', flush=True)
+    num_fl_folders = get_num_fl_folders(save_dir)
+    print(f" from {num_fl_folders} categories ---")
+    datasets = []
     for fl_num in range(num_fl_folders):
-        driver = utils.get_firefox_driver(SAVE_DIR, ['text/csv'])
+        driver = utils.get_firefox_driver(save_dir, ['text/csv'])
         driver.get("http://infoshare.stats.govt.nz/")
         try:
-            fl_elem = driver.find_element_by_xpath(
-                "//div[@id = 'ctl00_MainContent_tvBrowseNodes']"
-                f"//a[@id = 'ctl00_MainContent_tvBrowseNodest{fl_num}']"
+            fl_elem = WebDriverWait(driver, 2).until(
+                EC.element_to_be_clickable((By.ID,
+                    f"ctl00_MainContent_tvBrowseNodest{fl_num}"
+                ))
             )
-        except NoSuchElementException:
-            print('y1')
-            break  # no more first-level elements
+        except TimeoutException:
+            print("Page loading too slowly.")
+            break
         fl_name = fl_elem.text
         print(fl_num, fl_name)
-        fl_elem.click()
         i = fl_num + 1
+        fl_elem.click()
 
         while True:
             try:
-                sl_elem = WebDriverWait(driver, 2).until(
-                    EC.presence_of_element_located((By.XPATH, 
-                        "//div[@id = 'ctl00_MainContent_tvBrowseNodes']"
-                        f"/div[@id = 'ctl00_MainContent_tvBrowseNodesn{fl_num}Nodes']"
+                sl_elem = WebDriverWait(driver, 4).until(
+                    EC.element_to_be_clickable((By.XPATH,
+                        f"//div[@id = 'ctl00_MainContent_tvBrowseNodesn{fl_num}Nodes']"
                         f"//a[@id = 'ctl00_MainContent_tvBrowseNodest{i}']"
                     ))
                 )
@@ -139,16 +83,20 @@ def navigate_mainpage(save_dir):
                 break  # no more second-level elements
             sl_name = sl_elem.text
             print(f"  > {sl_name}:", end=' ', flush=True)
-            sl_elem.click()
             sl_num = i
-            i += 1
+            if sl_name in fake_sl_names:
+                i += 2  # unsure why this is different to normal
+                print("skipping")  # not yet implemented
+                continue
+            else:
+                i += 1
+            sl_elem.click()
 
             while True:
                 try:
-                    tl_elem = WebDriverWait(driver, 2).until(
-                        EC.presence_of_element_located((By.XPATH,
-                            "//div[@id = 'ctl00_MainContent_tvBrowseNodes']"
-                            f"/div[@id = 'ctl00_MainContent_tvBrowseNodesn{fl_num}Nodes']"
+                    tl_elem = WebDriverWait(driver, 4).until(
+                        EC.element_to_be_clickable((By.XPATH,
+                            f"//div[@id = 'ctl00_MainContent_tvBrowseNodesn{fl_num}Nodes']"
                             f"/div[@id = 'ctl00_MainContent_tvBrowseNodesn{sl_num}Nodes']"
                             f"//a[@id = 'ctl00_MainContent_tvBrowseNodest{i}']"
                         ))
@@ -156,27 +104,40 @@ def navigate_mainpage(save_dir):
                 except TimeoutException:
                     print('y3')
                     break  # no more third-level elements
-
-                data_ids.append(tl_elem.get_attribute('id'))
-                print(i, end=' ', flush=True)
-
-                # LOGIC TO DOWNLOAD DATASET:
                 tl_name = tl_elem.text
-                dataset_name = '__'.join([fl_name, sl_name, tl_name]).replace('/', ' ')
-                driver = get_info_from_dataset(driver, tl_elem, dataset_name, save_dir)
-
-                i += 2  # unsure why this is different to first/second levels 
-
+                print(i, end=' ', flush=True)
+                i += 2  # unsure why this is different to first/second levels
+                datasets.append((fl_name, sl_name, tl_name))
+                
         driver.quit()
+    
+    print(f"--- Found all {len(datasets)} datasets ---\n")
+    return datasets
 
-    return data_ids
+
+def scrape_all_infoshare(save_dir):
+    dataset_refs = find_all_datasets(save_dir)
+    
+    with open(f"{save_dir}/00_datasets_catalogue.csv", 'w') as f:
+        csv_out = csv.writer(f)
+        csv_out.writerow(('category','group','dataset'))
+        csv_out.writerows(dataset_refs)
+    
+    for dataset_ref in dataset_refs:
+        utils.get_infoshare_dataset(
+            dataset_ref=dataset_ref,
+            title_to_options='ALL',
+            dataset_name='__'.join(dataset_ref).replace('/', ' '),
+            save_dir=save_dir,
+            show_status_flags=True
+            # get_metadata=True  # NOT IMPLEMENTED YET
+        )
+    print("\nSCRAPED ALL")
 
 
 if __name__ == "__main__":
-    SAVE_DIR = os.path.join(os.getcwd(), 'data', 'all_infoshare')
-    if not os.path.exists(SAVE_DIR):
-        os.makedirs(SAVE_DIR)
+    save_dir = os.path.join(os.getcwd(), 'data', 'all_infoshare')
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     
-    data_ids = navigate_mainpage(SAVE_DIR)
-    
-    print("Number of datasets:", len(data_ids))
+    scrape_all_infoshare(save_dir)
