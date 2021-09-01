@@ -8,12 +8,12 @@ import json
 import numpy as np
 import pandas as pd
 
-import utils
+from infoshare import download
 
 
 def tourism1(save_dir):
     # For small test
-    utils.get_infoshare_dataset(
+    download.get_infoshare_dataset(
         dataset_ref=(
             'Tourism',
             'International Travel and Migration - ITM',
@@ -36,7 +36,7 @@ def tourism1(save_dir):
     
 def tourism_all(save_dir):
     # For entire dataset
-    utils.get_infoshare_dataset(
+    download.get_infoshare_dataset(
         dataset_ref=(
             'Tourism',
             'International Travel and Migration - ITM',

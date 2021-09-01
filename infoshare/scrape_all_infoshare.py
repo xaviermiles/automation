@@ -3,7 +3,8 @@ There is three levels in Infoshare - category, group, dataset
 This script navigates all 3 levels to the next dataset and recursively breaks
 back up to the next level (and looks for next element), recording the dataset
 details. (It is acting like a depth-first search.)
-Then it uses utils.get_infoshare_dataset to download the datasets.
+Then it uses the get_infoshare_dataset function (from infoshare/download.py) to
+download the datasets.
 
 TODO:
     - custom functions for special-case datasets
@@ -17,6 +18,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 import utils
+from infoshare import download
 
 
 def get_num_fl_folders(save_dir):
@@ -123,7 +125,7 @@ def scrape_all_infoshare(save_dir):
         csv_out.writerows(dataset_refs)
     
     for dataset_ref in dataset_refs:
-        utils.get_infoshare_dataset(
+        download.get_infoshare_dataset(
             dataset_ref=dataset_ref,
             title_to_options='ALL',
             dataset_name='__'.join(dataset_ref).replace('/', ' '),

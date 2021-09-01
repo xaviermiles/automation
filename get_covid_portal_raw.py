@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
 
 import utils
+from infoshare import download
 
 
 # Functions to download datasets from First Gas portal
@@ -146,7 +147,7 @@ def get_air_cargo():
     }
     for dataset, info in dataset_to_info.items():
         for observation, suffix in info:
-            utils.get_infoshare_dataset(
+            download.get_infoshare_dataset(
                 dataset_ref=(
                     'Imports and exports',
                     'Overseas Cargo Statistics - OSC',
@@ -175,7 +176,7 @@ def get_sea_cargo():
     }
     for dataset, info in dataset_to_info.items():
         for observation, suffix in info:
-            utils.get_infoshare_dataset(
+            download.get_infoshare_dataset(
                 dataset_ref=(
                     'Imports and exports',
                     'Overseas Cargo Statistics - OSC',
@@ -196,7 +197,7 @@ def get_sea_cargo():
             
 def get_card_transaction_total_spend():
     for treatment in ['Actual','Seasonally adjusted']:
-        utils.get_infoshare_dataset(
+        download.get_infoshare_dataset(
             dataset_ref=(
                 'Economic indicators',
                 'Electronic Card Transactions (ANZSIC06) - ECT',
@@ -211,7 +212,7 @@ def get_card_transaction_total_spend():
             save_dir=SAVE_DIR
         )
         
-    utils.get_infoshare_dataset(
+    download.get_infoshare_dataset(
         dataset_ref=(
             'Economic indicators',
             'Electronic Card Transactions (ANZSIC06) - ECT',
@@ -230,7 +231,7 @@ def get_card_transaction_total_spend():
 def get_card_transaction_spend_by_industry():
     treatments = ['Actual','Seasonally adjusted']
     for treatment in treatments:
-        utils.get_infoshare_dataset(
+        download.get_infoshare_dataset(
             dataset_ref=(
                 'Economic indicators',
                 'Electronic Card Transactions (ANZSIC06) - ECT',
@@ -247,7 +248,7 @@ def get_card_transaction_spend_by_industry():
 
         industries = ['Services','Non-retail excl. services']
         for industry in industries:
-            utils.get_infoshare_dataset(
+            download.get_infoshare_dataset(
                 dataset_ref=(
                     'Economic indicators',
                     'Electronic Card Transactions (ANZSIC06) - ECT',
