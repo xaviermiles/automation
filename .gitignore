@@ -4,3 +4,5 @@ geckodriver.log
 geckodriver*.tar.gz
 
 data/
+config.yaml
+data_releases/o365_token.txt
