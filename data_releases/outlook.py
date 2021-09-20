@@ -4,44 +4,51 @@ import pytz
 from datetime import date, datetime, timedelta
 from bs4 import BeautifulSoup as bs
 
-import yaml
 from O365 import Account, Connection, FileSystemTokenBackend
 from O365.calendar import Event
 
+import utils
 
-def get_covid_calendar():
-    with open('../config.yaml', 'r') as f:
-        config = yaml.load(f, Loader=yaml.BaseLoader)
+
+def get_account(scopes):
+    config = utils.read_config()
         
     credentials = (config['o365']['client_id'], config['o365']['client_secret'])
     # replace FileSystemTokenBackend with FirestoreBackend ??
     token_backend = FileSystemTokenBackend(token_filename='o365_token.txt')
     account = Account(credentials, token_backend=token_backend)
     
-    scopes = ['basic', 'calendar_shared_all']
     if not account.is_authenticated:
         account.authenticate(scopes=scopes)
     # else:
     #     # is this doing anything?
     #     con = Connection(credentials, scopes=scopes)
     #     con.refresh_token()
-    
+    return account
+
+
+def get_covid_calendar():
+    account = get_account(['basic', 'calendar_shared_all'])
     schedule = account.schedule()
-    covid_calendar = schedule.get_calendar(calendar_name='COVID Release Calendar')
-    
-    return covid_calendar
+    calendar = schedule.get_calendar(calendar_name='COVID Release Calendar')
+    return calendar
 
 
-def get_next_info(calendar, days):
+def get_next_info(calendar, days, tzone):
     """
+    tzone (str) - this must be an instance of a tzinfo subclass
+    
     Return (some) information about the calendar events in the next {days} days,
     ordered by expected release-datetime.
     """
-    TIMEZONE = pytz.timezone('Pacific/Auckland')
+    if not isinstance(days, int) or days < 1:
+        raise ValueError("{days} should be positive integer")
+    current_date = datetime.now(tzone) \
+                           .replace(hour=0, second=0, minute=0, microsecond=0)
     
-    q = calendar.new_query('start').greater(date.today() - timedelta(days=1))
+    q = calendar.new_query('start').greater(current_date - timedelta(days=1))
     q.chain('and').on_attribute('end') \
-                  .less(date.today() + timedelta(days=days + 1))
+                  .less(current_date + timedelta(days=days + 1))
     next_responses = calendar.get_events(query=q, include_recurring=True)
     
     next_info = []
@@ -56,7 +63,7 @@ def get_next_info(calendar, days):
         next_info.append({
             'ical_uid': r.ical_uid,
             'title': r.subject,
-            'release_dt': r.start.astimezone(TIMEZONE).isoformat(),
+            'release_dt': r.start.astimezone(tzone).isoformat(),
             'files': [file.group(1).strip() for file in files_re],
             'url': url if url_re else None,
             'script': scripts if scripts_re else None
@@ -66,30 +73,39 @@ def get_next_info(calendar, days):
     return next_info_sorted
 
 
-def move_event(ical_uid, days, hours, minutes):
+def move_event(calendar, ical_uid, days=0, hours=0, minutes=0):
     """
     Move event by number of days+hours+minutes - positive values will move event
     forwards, negative backwards.
     """
     tchange = timedelta(days=days, hours=hours, minutes=minutes)
-    q = covid_calendar.new_query('ical_uid').equals(ical_uid)
+    q = calendar.new_query('ical_uid').equals(ical_uid)
     event = list(covid_calendar.get_events(query=q))[0]
     event.start = event.start + tchange
     event.end = event.end + tchange
     event.save()
     
-
-if __name__ == "__main__":
-    covid_calendar = get_covid_calendar()
-    next_week = get_next_info(covid_calendar, 1)
     
-    
-    output = {
-        'next_dt': next_week[0]['release_dt'],
-        'calendar_id': covid_calendar.calendar_id,
-        'meta': "Gives datetimes according to New Zealand timezone.",
-        'full_info': next_week
-    }
-    with open('../data/next_week.json', 'w') as f:
-        json.dump(output, f)
+def cancel_event(calendar, ical_uid):
+    """
+    Cancels event in Outlook calendar
+    """
+    tchange = timedelta(days=days, hours=hours, minutes=minutes)
+    q = calendar.new_query('ical_uid').equals(ical_uid)
+    event = list(covid_calendar.get_events(query=q))[0]
+    event.cancel_event()
+    event.save()
 
+
+def email_alert(message, subject=""):
+    config = utils.read_config()
+    account = get_account(['basic', 'message_all'])
+    mailbox = account.mailbox()
+    
+    m = mailbox.new_message()
+    m.to.add(config['alert_email_addresses'])
+    m.subject = "Alert!! from automation"
+    if subject:
+        m.subject += f"- {subject}"
+    m.body = message
+    m.send()

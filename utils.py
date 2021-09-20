@@ -1,6 +1,21 @@
 import os
 
+import yaml
 from selenium import webdriver
+
+
+def read_config():
+    with open('../config.yaml') as f:
+        config = yaml.load(f, Loader=yaml.BaseLoader)
+    
+    REQ_FIELDS = ['o365', 'alert_email_addresses']
+    if any(field not in config.keys() for field in REQ_FIELDS):
+        raise NotImplementedError("config doesn't include all necessary fields")
+    # TODO: Could this checking be improved?
+    # https://stackoverflow.com/questions/3262569/validating-a-yaml-document-in-python
+    # https://asdf-standard.readthedocs.io/en/latest/schemas/yaml_schema.html
+    
+    return config
 
 
 def get_firefox_driver(save_dir=None, download_filetypes=None):
