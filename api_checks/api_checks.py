@@ -1,6 +1,9 @@
 """
 For checking the consistency between Infoshare data and the equivalent data
 pulled from the Stats NZ API.
+
+This downloads the Infoshare versions but not the API versions, since the Stats
+NZ UAT/nonprod API requires a Stats IP address.
 """
 import os, subprocess
 import json
@@ -11,8 +14,22 @@ import pandas as pd
 from infoshare import download
 
 
-def tourism1(save_dir):
-    # For small test
+def tourism(save_dir):
+    # Tourism
+    print("Tourism")
+    tourism_info = {
+        'tourism-small': {
+            'api_fname': 'ITM441AA.csv',
+            'infoshare_fname': 'tourism1.csv'
+        },
+        'tourism-all': {
+            'api_fname': 'ITM441-All.csv',
+            'infoshare_fname': 'tourism-all.csv'
+        }
+    }
+    print("\nComparisons:")
+    compare_datasets(tourism_info, save_dir)
+    
     download.get_infoshare_dataset(
         dataset_ref=(
             'Tourism',
@@ -32,10 +49,6 @@ def tourism1(save_dir):
         save_dir=save_dir,
         show_status_flags=True
     )
-    
-    
-def tourism_all(save_dir):
-    # For entire dataset
     download.get_infoshare_dataset(
         dataset_ref=(
             'Tourism',
@@ -53,8 +66,48 @@ def tourism_all(save_dir):
         show_status_flags=True
     )
     
+
+def hlfs(save_dir):
+    """
+    Coordinate checking for five HLFS datasets
+    """
+    api_name_to_dataset_name = {
+        'HLF347801': "Persons Employed by Sex by Industry, ANZSIC06 (Qrtly-Mar/Jun/Sep/Dec)",
+        'HLF348101': "Persons Employed by Sex by Occupation, ANZSCO (Qrtly-Mar/Jun/Sep/Dec)",
+        'HLF435301': "Persons Employed by Employment Status by Industry, ANZSIC06 (Qrtly-Mar/Jun/Sep/Dec)",
+        'HLF563101': "Multiple Job Holders by Sex by Occupation (Qrtly-Mar/Jun/Sep/Dec)",
+        'HLF563201': "Multiple Job Holders by Industry (Qrtly-Mar/Jun/Sep/Dec)"
+    }
+    # Infoshare download
+    # for api_name, dataset_name in api_name_to_dataset_name.items():
+    #     download.get_infoshare_dataset(
+    #         dataset_ref=(
+    #             'Work income and spending',
+    #             'Household Labour Force Survey - HLF',
+    #             dataset_name
+    #         ),
+    #         title_to_options='ALL',
+    #         dataset_name=f"{api_name}__infoshare",
+    #         save_dir=save_dir,
+    #         show_status_flags=True
+    #     )
+    # Compare
+    full_info = {
+        dataset_name: {
+            'api_fname': f"{api_name}.csv",
+            'infoshare_fname': f"{api_name}__infoshare.csv"
+        }
+        for api_name, dataset_name in api_name_to_dataset_name.items()
+    }
+    compare_datasets(full_info, save_dir)
+
     
 def compare_datasets(datasets_info, data_folder):
+    """
+    datasets_info should be a dictionary which maps dataset names to an inner
+    dictionary of the form:
+        {'api_fname': ..., 'infoshare_fname': ...}
+    """
     try:
         r = subprocess.check_output([
             "Rscript", "--vanilla", "compare.R",
@@ -118,21 +171,7 @@ if __name__ == "__main__":
     save_dir = "../data/api_checks"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+        
+    # tourism(save_dir)
     
-    dataset_to_api = {
-        'tourism1': 'ITM441AA.csv',
-        # 'tourism-all': 'ITM441AA.csv',
-    }
-    
-    # Download Infoshare datasets
-    print("Downloading from Infoshare:")
-    tourism1(save_dir)
-    # tourism_all(save_dir)
-    
-    # Make comparisons
-    datasets_info = {
-        dataset: {'api_fname': api_fname, 'infoshare_fname': f'{dataset}.csv'} 
-        for dataset, api_fname in dataset_to_api.items()
-    }
-    print("\nComparisons:")
-    compare_datasets(datasets_info, save_dir)
+    hlfs(save_dir)
