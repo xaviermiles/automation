@@ -3,18 +3,37 @@
 suppressPackageStartupMessages({
   library(tidyverse)
   library(lubridate)
+  library(zoo)
   library(jsonlite)
   library(optparse)
 })
 
 # Helper functions
-parse_yearmon_col <- function(yearmon_col) {
-  yearmon_col %>%
-    map_dbl(function(yearmon_str) {
-      yearmon_str %>% paste0("M01") %>% strsplit("M") %>% ymd()
-    }) %>%
-    as_date() %>%
-    ceiling_date("months") - days(1)
+parse_period_col <- function(period_col) {
+  # Returns final date in the given period (to align with API)
+  if (grepl("\\d{4}M\\d{2}", period_col[1])) {
+    # Monthly
+    date_col <- map(period_col,
+      function(yearmon_str) {
+        yearmon_str %>% as.yearmon(format = "%YM%m") %>% as.Date(frac = 1)
+      }
+    )
+  } else if (grepl("\\d{4}Q\\d", period_col[1])) {
+    # Quarterly
+    date_col <- map(period_col,
+      function(yearqtr_str) {
+        yearqtr_str %>% as.yearqtr(format = "%YQ%q") %>% as.Date(frac = 1)
+      }
+    )
+  } else if (grepl("\\d{4}", period_col[1])) {
+    # Annual
+    date_col <- map(period_col,
+      function(year_str) {
+        ymd(paste0(year_str, "-12-31"))
+      }
+    )
+  }
+  return(date_col)
 }
 
 parse_value_for_number <- function(raw_value) {
@@ -61,8 +80,11 @@ for (dataset_name in names(datasets_info)) {
   api_copy <- api_fname %>%
     file.path(data_folder, .) %>%
     read_csv(col_types = cols()) %>%
-    mutate(Period = as.Date(Period, "%d/%m/%Y"),
-           Value = suppressWarnings(as.numeric(Value)))
+    mutate(
+      Period = as.Date(Period, "%d/%m/%Y"),
+      Value = suppressWarnings(as.numeric(Value))
+    ) %>%
+    select_if(function(x) {!all(is.na(x))})   # remove all-NA columns
   
   num_header_rows <- names(api_copy) %>%
     str_extract("Label\\d") %>%
@@ -84,18 +106,21 @@ for (dataset_name in names(datasets_info)) {
   infoshare_long <- infoshare %>%
     gather(variable, Value, -Period) %>%
     separate(variable, paste0("Label", 1:num_header_rows), sep="__") %>%
-    mutate(Period = parse_yearmon_col(Period),
-           Status = map_chr(Value, function(v) { unlist(strsplit(v, " "))[2] }) %>% 
+    mutate(Period = parse_period_col(Period),
+           Status = Value %>%
+             map_chr(
+               function(v) { unlist(strsplit(v, " "))[2] }
+             ) %>% 
              replace_na("F"),
            Value = map_dbl(Value, parse_value_for_number)) %>%
     filter(!is.na(Value) | Status == "C")
   
   # Write long to csv
-  # infoshare_fname %>%
-  #   gsub(".csv", "", .) %>%
-  #   paste0("__long.csv") %>%
-  #   file.path(data_folder, .) %>%
-  #   write_csv(infoshare_long, .)
+  infoshare_fname %>%
+    gsub(".csv", "", .) %>%
+    paste0("__long.csv") %>%
+    file.path(data_folder, .) %>%
+    write_csv(infoshare_long, .)
   
   # Check equivalency of dataframes
   api_subset <- api_copy[, names(infoshare_long)]
