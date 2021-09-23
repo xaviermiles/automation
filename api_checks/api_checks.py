@@ -15,21 +15,6 @@ from infoshare import download
 
 
 def tourism(save_dir):
-    # Tourism
-    print("Tourism")
-    tourism_info = {
-        'tourism-small': {
-            'api_fname': 'ITM441AA.csv',
-            'infoshare_fname': 'tourism1.csv'
-        },
-        'tourism-all': {
-            'api_fname': 'ITM441-All.csv',
-            'infoshare_fname': 'tourism-all.csv'
-        }
-    }
-    print("\nComparisons:")
-    compare_datasets(tourism_info, save_dir)
-    
     download.get_infoshare_dataset(
         dataset_ref=(
             'Tourism',
@@ -65,6 +50,19 @@ def tourism(save_dir):
         save_dir=save_dir,
         show_status_flags=True
     )
+    
+    tourism_info = {
+        'tourism-small': {
+            'api_fname': 'ITM441AA.csv',
+            'infoshare_fname': 'tourism1.csv'
+        },
+        'tourism-all': {
+            'api_fname': 'ITM441-All.csv',
+            'infoshare_fname': 'tourism-all.csv'
+        }
+    }
+    print("\nComparisons:")
+    compare_datasets(tourism_info, save_dir)
     
 
 def hlfs(save_dir):
@@ -108,11 +106,12 @@ def compare_datasets(datasets_info, data_folder):
     dictionary of the form:
         {'api_fname': ..., 'infoshare_fname': ...}
     """
+    print(json.dumps(datasets_info))
     try:
         r = subprocess.check_output([
             "Rscript", "--vanilla", "compare.R",
             "--data_folder", data_folder,
-            "--comparisons", json.dumps(datasets_info)
+            "--datasets_info", json.dumps(datasets_info)
         ])
     except subprocess.CalledProcessError:
         return
