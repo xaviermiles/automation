@@ -27,7 +27,7 @@ def coordinate(event_details):
         xpath=event_details['xpath']
     )
     if updated:
-        # email alert
+        # detected a data release
         msg = """
         Data released for "{title}" with date "{date_str}"
         
@@ -36,32 +36,59 @@ def coordinate(event_details):
         :^)
         """.format(**event_details)
         outlook.email_alert(msg, subject="Data Release Detected")
-        # remove calendar entry
-        outlook.cancel_event(covid_calendar, event_details['ical_uid'])
+        # remove calendar entry -- DISABLED FOR TESTING
+        # outlook.cancel_event(covid_calendar, event_details['ical_uid'])
         # cancel retry-jobs
+        schedule.clear(event_details['ical_uid'])
+    elif len(schedule.get_jobs(event_details['ical_uid'])) == 0:
+        # no more retries scheduled, move calendar event to next weekday
+        if datetime.now(system_tzone).strftime('%A') == "Friday":
+            days_to_add = 3
+        else:
+            days_to_add = 1
+        outlook.move_event(covid_calendar, event_details['ical_uid'],
+                           days = days_to_add)
+    elif updated is None:
+        # error was thrown when checking site
+        msg = """
+        Error was thrown when checking data release for {event_name}.
+        (This event will not be automatically retried.)
+        
+        Error message: {response_info}
+        
+        Full event details:
+        {event_details}
+        """.format(event_details=event_details,
+                   response_info=response_info,
+                   event_name=event_details['title'])
+        outlook.email_alert(msg, subject="Data Release Error")
+        # abandon retries for this event
         schedule.clear(event_details['ical_uid'])
 
 
-
 def check_for_elapsed_events():
-    # The events sorted by datetime, so the first element is the next event
+    # The events are sorted by datetime, so the first element is the next event
     next_event = next_day[0]
     next_dt = datetime.fromisoformat(next_event['release_dt'])
     if next_dt < datetime.now(system_tzone):
         # Event has elapsed so should be put on "active" status
-        schedule.every(5).minutes.until.do(coordinate, info=next_event) \
-                .tags(next_event['ical_uid'])
+        schedule.every(5).minutes.do(coordinate, event_details=next_event) \
+                .until(datetime.now(system_tzone) + timedelta(m))
+                .tag(next_event['ical_uid'])
         # ...and removed from "pending"
         if len(next_day) > 1:
             next_day = next_day[1:]
         else:
-            schedule.clear('main_job')  # no more events to check for
-            
+            # no more events to check for
+            schedule.clear('main_job')
+    
+    return next_day
+
 
 if __name__ == "__main__":
-    # Setup
-    system_tzone = tzlocal.get_localzone()
-    print(system_tzone)
+    # Don't use system's actual timezone
+    # system_tzone = tzlocal.get_localzone()
+    system_tzone = pytz.timezone('Pacific/Auckland')
     
     covid_calendar = outlook.get_covid_calendar()
     next_day = outlook.get_next_info(covid_calendar, 1, system_tzone)
@@ -69,7 +96,11 @@ if __name__ == "__main__":
     output = {
         'next_dt': next_day[0]['release_dt'] if len(next_day) > 0 else None,
         'calendar_id': covid_calendar.calendar_id,
-        'meta': "Gives datetimes according to the system's timezone.",
+        'meta': """
+        Gives datetimes according to "{tzone}" timezone ({tzname}).
+        """.format(tzone=system_tzone,
+                   tzname=system_tzone.tzname(datetime.now()))
+        )
         'full_info': next_day
     }
     with open('../data/next_day.json', 'w') as f:
@@ -79,6 +110,6 @@ if __name__ == "__main__":
     schedule.every(15).minutes.do(check_for_elapsed_events) \
             .tag('main_job')
     
-    # while len(schedule.get_jobs()) > 0:
-    #     schedule.run_pending()
-    #     time.sleep(1)
+    while len(schedule.get_jobs()) > 0:
+        schedule.run_pending()
+        time.sleep(1)
