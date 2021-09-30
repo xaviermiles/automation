@@ -5,7 +5,9 @@ from selenium import webdriver
 
 
 def read_config():
-    with open('config.yaml') as f:
+    this_fpath = os.path.abspath(__file__)
+    config_fpath = os.path.join(os.path.dirname(this_fpath), 'config.yaml')
+    with open(config_fpath) as f:
         config = yaml.load(f, Loader=yaml.BaseLoader)
     
     REQ_FIELDS = ['o365', 'alert_email_addresses']
