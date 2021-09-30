@@ -106,7 +106,7 @@ def compare_datasets(datasets_info, data_folder):
     dictionary of the form:
         {'api_fname': ..., 'infoshare_fname': ...}
     """
-    print(json.dumps(datasets_info))
+    
     try:
         r = subprocess.check_output([
             "Rscript", "--vanilla", "compare.R",
