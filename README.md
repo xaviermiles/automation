@@ -13,18 +13,17 @@ This is being used to double-check the data uploaded to the API is correct.
 **Note:** Any Python scripts should be run with their directory as the current working directory.
 For example, _infoshare/scrape_all_infoshare.py_ should be run with _infoshare/_ as the working directory.
 
-## Set-up (for linux)
+## Set-up
 Make sure the local repo is included in PATH or PYTHONPATH (for Python importing).
 
-Selenium (Python package) requires a browser and a webdriver - this repo uses Firefox + Geckodriver (could be use other combination but code might have to be changed).
-[Original guide for installation.](https://askubuntu.com/questions/870530/how-to-install-geckodriver-in-ubuntu) First, download firefox:
-```
-sudo apt install firefox
-```
-Then, find the latest Geckodriver link from [here](https://askubuntu.com/questions/870530/how-to-install-geckodriver-in-ubuntu) and install:
+Selenium (Python package) requires a browser and a webdriver.
+
+For getting the Firefox webdriver (Geckodriver) on linux, find the latest release from [here](https://github.com/mozilla/geckodriver/releases) and install by running:
 ```
 wget <<https://github.com/.../geckodriver-v???-linux64.tar.gz>>
-tar -xvzf geckdriver*
+tar -xvzf geckdriver-v???-linux64.tar.gz
 chmod +x geckodriver
 sudo mv geckodriver /usr/local/bin/
 ```
+
+**NOTE: utils.get_chrome_driver function has not been tested yet**

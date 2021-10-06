@@ -278,7 +278,7 @@ def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir,
     dataset_name should not include file extension; this is added later (.csv)
     """
     print(dataset_name)
-    driver = utils.get_firefox_driver(save_dir, ['text/csv'])
+    driver = utils.get_driver(save_dir, ['text/csv'])
     driver.get("http://infoshare.stats.govt.nz/")
     driver = navigate_to_dataset(driver, dataset_ref)
     driver = make_infoshare_selections(driver,

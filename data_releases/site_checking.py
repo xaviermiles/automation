@@ -26,7 +26,7 @@ def check_date_str(url, text_template, date_str, xpath=None, css=None):
     if (xpath and css) or (xpath is None and css is None):
         return None, "Exactly one of xpath or css must be specified"
     
-    driver = utils.get_firefox_driver()
+    driver = utils.get_driver()
     driver.get(url)
     try:
         if xpath:

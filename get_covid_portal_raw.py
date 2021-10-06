@@ -76,8 +76,8 @@ def by_selected_major_users():
         'TRC02003': ['2003', '2004']
     }
     
-    driver = utils.get_firefox_driver(SAVE_DIR, 
-                                      ['application/download; charset=utf-8'])
+    driver = utils.get_driver(SAVE_DIR,
+                              ['application/download; charset=utf-8'])
     driver.get(
         "https://www.oatis.co.nz/Ngc.Oatis.UI.Web.Internet/Common/"
         "OatisLogin.aspx"

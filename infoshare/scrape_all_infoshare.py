@@ -22,7 +22,7 @@ from infoshare import download
 
 
 def get_num_fl_folders(save_dir):
-    driver = utils.get_firefox_driver(save_dir, ['text/csv'])
+    driver = utils.get_driver(save_dir, ['text/csv'])
     driver.get("http://infoshare.stats.govt.nz/")
     num_fl_folders = len(driver.find_elements_by_xpath(
         "//div[@id = 'ctl00_MainContent_tvBrowseNodes']"
@@ -55,7 +55,7 @@ def find_all_datasets(save_dir):
     print(f" from {num_fl_folders} categories ---")
     datasets = []
     for fl_num in range(num_fl_folders):
-        driver = utils.get_firefox_driver(save_dir, ['text/csv'])
+        driver = utils.get_driver(save_dir, ['text/csv'])
         driver.get("http://infoshare.stats.govt.nz/")
         try:
             fl_elem = WebDriverWait(driver, 2).until(

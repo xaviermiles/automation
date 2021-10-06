@@ -2,6 +2,7 @@ import os
 
 import yaml
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 
 
 def read_config():
@@ -20,11 +21,23 @@ def read_config():
     return config
 
 
+def get_driver(save_dir=None, download_filetypes=None):
+    browser_to_use = read_config()['webdriver']['browser_to_use']
+    if browser_to_use == 'firefox':
+        return get_firefox_driver(save_dir, download_filetypes)
+    elif browser_to_use == 'chrome':
+        return get_chrome_driver()
+
+
 def get_firefox_driver(save_dir=None, download_filetypes=None):
     """
     save_dir should be full/absolute (not relative) filepath
     """
     driver_kwargs = {}
+    
+    exe_path = read_config()['webdriver'].get('firefox_exe_path')
+    if exe_path:
+        driver_kwargs['executable_path'] = exe_path
     
     opts = webdriver.FirefoxOptions()
     opts.add_argument("--headless")
@@ -49,4 +62,28 @@ def get_firefox_driver(save_dir=None, download_filetypes=None):
     driver_kwargs['log_path'] = gecko_fpath
     
     driver = webdriver.Firefox(**driver_kwargs)
+    return driver
+
+
+def get_chrome_driver():
+    """
+    TODO: check that this function works
+    """
+    driver_kwargs = {}
+    
+    exe_path = read_config()['webdriver'].get('chrome_exe_path')
+    if exe_path:
+        driver_kwargs['executable_path'] = exe_path
+        
+    opts = webdriver.ChromeOptions()
+    opts.add_argument("--headless")
+    driver_kwargs['options'] = opts
+    
+    try:
+        driver = webdriver.Chrome(**driver_kwargs)
+    except WebDriverException:
+        raise WebDriverException("Check chrome executable path is correctly specified")
+    except OSError:
+        raise OSError("Check chrome executable path is correctly specified")
+        
     return driver
