@@ -1,0 +1,106 @@
+{
+  "$schema":"http://json-schema.org/draft-07/schema",
+  "type":"object",
+  "title":"The root schema",
+  "description":"This json-schema describes the necessary (and optional) fields in config.yaml file.",
+  "examples":[
+    {
+      "o365":{
+        "client_id":"a1b2c3d4...",
+        "client_secret":"abcdwxyz..."
+      },
+      "alert_email_addresses":[
+        "john.smith@gmail.com",
+        "juan@yahoo.com"
+      ],
+      "stats_api":{
+        "prod_url":"https://stats_api_prod.nz",
+        "prod_token":"abcdwxyz...",
+        "uat_url":"https://stats_api_uat.nz",
+        "uat_token":"abcdwxyz..."
+      },
+      "webdriver":{
+        "browser_to_use":"chrome",
+        "chrome_executable_path":"C:\\chromefolder\\chrome.exe",
+        "firefox_executable_path":"/usr/bin/firefox.exe"
+      }
+    }
+  ],
+  "required":[
+    "o365",
+    "alert_email_addresses",
+    "webdriver"
+  ],
+  "properties":{
+    "o365":{
+      "type":"object",
+      "description":"Credentials for connecting to Microsoft/Outlook API.",
+      "required":[
+        "client_id",
+        "client_secret"
+      ],
+      "properties":{
+        "client_id":{
+          "type":"string"
+        },
+        "client_secret":{
+          "type":"string"
+        }
+      }
+    },
+    "alert_email_addresses":{
+      "type":"array",
+      "description":"Which email addresses should alerts be sent to?",
+      "items": {
+         "type":"string"
+      }
+    },
+    "stats_api":{
+      "type":"object",
+      "description":"Credentials related to Stats NZ API.",
+      "required":[
+        "prod_url",
+        "prod_token",
+        "uat_url",
+        "uat_token"
+      ],
+      "properties":{
+        "prod_url":{
+          "type":"string"
+        },
+        "prod_token":{
+          "type":"string"
+        },
+        "uat_url":{
+          "type":"string"
+        },
+        "uat_token":{
+          "type":"string"
+        }
+      }
+    },
+    "webdriver":{
+      "type":"object",
+      "description":"Settings for webdriver used by selenium.",
+      "required":[
+        "browser_to_use"
+      ],
+      "properties":{
+        "browser_to_use":{
+          "type":"string",
+          "description":"Which browser to use?",
+          "enum": ["firefox", "chrome"]
+        },
+        "chrome_executable_path":{
+          "type":"string",
+          "description":"Can be omitted if 'chrome.exe' is on PATH."
+        },
+        "firefox_executable_path":{
+          "type":"string",
+          "description":"Can be omitted if 'firefox.exe' is on PATH."
+        }
+      }
+    }
+  },
+  "additionalProperties":true
+}

@@ -1,22 +1,31 @@
 import os
+import json
 
+import jsonschema
 import yaml
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 
 
-def read_config():
-    this_fpath = os.path.abspath(__file__)
-    config_fpath = os.path.join(os.path.dirname(this_fpath), 'config.yaml')
+def read_config(rel_fpath='config.yaml'):
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    config_fpath = os.path.join(this_dir, rel_fpath)
+    if not os.path.exists(config_fpath):
+        raise FileNotFoundError("Please create 'config.yaml' file")
     with open(config_fpath) as f:
         config = yaml.load(f, Loader=yaml.BaseLoader)
     
-    REQ_FIELDS = ['o365', 'alert_email_addresses']
-    if any(field not in config.keys() for field in REQ_FIELDS):
-        raise NotImplementedError("config doesn't include all necessary fields")
-    # TODO: Could this checking be improved?
+    # TODO: Could this checking be made into yamlschema?
     # https://stackoverflow.com/questions/3262569/validating-a-yaml-document-in-python
     # https://asdf-standard.readthedocs.io/en/latest/schemas/yaml_schema.html
+    schema_fpath = os.path.join(this_dir, 'config_schema.json')
+    with open(schema_fpath) as f:
+        schema = json.load(f)
+    try:
+        jsonschema.validate(config, schema)
+    except jsonschema.ValidationError as e:
+        # prints a lot of output by default
+        raise jsonschema.ValidationError(e.message)
     
     return config
 
