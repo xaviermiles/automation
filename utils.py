@@ -1,5 +1,6 @@
 import os
 import json
+from time import sleep
 
 import jsonschema
 import yaml
@@ -31,16 +32,19 @@ def read_config(rel_fpath='config.yaml'):
 
 
 def get_driver(save_dir=None, download_filetypes=None):
+    """
+    save_dir should be absolute (not relative) filepath
+    """
     browser_to_use = read_config()['webdriver']['browser_to_use']
     if browser_to_use == 'firefox':
         return get_firefox_driver(save_dir, download_filetypes)
     elif browser_to_use == 'chrome':
-        return get_chrome_driver()
+        return get_chrome_driver(save_dir)
 
 
 def get_firefox_driver(save_dir=None, download_filetypes=None):
     """
-    save_dir should be full/absolute (not relative) filepath
+    Get Selenium-powered Firefox instance
     """
     driver_kwargs = {}
     
@@ -74,9 +78,9 @@ def get_firefox_driver(save_dir=None, download_filetypes=None):
     return driver
 
 
-def get_chrome_driver():
+def get_chrome_driver(save_dir=None):
     """
-    TODO: check that this function works
+    Get Selenium-powered Chrome instance
     """
     driver_kwargs = {}
     
@@ -86,6 +90,11 @@ def get_chrome_driver():
         
     opts = webdriver.ChromeOptions()
     opts.add_argument("--headless")
+    if save_dir:
+        opts.add_experimental_option("prefs", {
+            "download.default_directory": save_dir,
+            "download.prompt_for_download": False
+        })
     driver_kwargs['options'] = opts
     
     try:
@@ -94,5 +103,36 @@ def get_chrome_driver():
         raise WebDriverException("Check chrome executable path is correctly specified")
     except OSError:
         raise OSError("Check chrome executable path is correctly specified")
-        
+    
     return driver
+
+
+def downloads_wait(filepaths, timeout, retry_interval=0.5):
+    """
+    Wait for downloads to finish with a specified timeout.
+    
+    Return boolean to indicate whether all downloads were completed.
+
+    Args
+    ----
+    filepaths : set[str]
+        The filepaths where the files will be downloaded.
+    timeout : int
+        How many seconds to wait until timing out.
+    retry_interval : float
+        How many seconds to wait between retries.
+
+    """
+    seconds = 0
+    dl_wait = True
+    while dl_wait and seconds < timeout:
+        for f in filepaths.copy():
+            if os.path.exists(f):
+                filepaths.remove(f)
+        if len(filepaths) == 0:
+            dl_wait = False
+        
+        sleep(retry_interval)
+        seconds += retry_interval
+    
+    return not dl_wait

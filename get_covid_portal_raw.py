@@ -49,7 +49,13 @@ def by_largest_users():
     default_fpath = os.path.join(SAVE_DIR, f"{latest_report.text}.xlsx")
     latest_report.click()
     altered_fpath = os.path.join(SAVE_DIR, "Maui SQMQ Report.xlsx")
-    os.rename(default_fpath, altered_fpath)  # overwrites previous copy
+    download_successful = utils.downloads_wait({default_fpath}, 5)
+    if not download_successful:
+        raise NotImplementedError("Download of Maui report timed out")
+    # overwrites previous copy:
+    if os.path.exists(altered_fpath):
+        os.remove(altered_fpath)
+    os.rename(default_fpath, altered_fpath)
     
     print("Finished: by_largest_users\n")
     driver.quit()
