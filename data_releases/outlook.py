@@ -9,6 +9,8 @@ from O365.calendar import Event
 
 import utils
 
+DEFAULT_TZONE = pytz.timezone('Pacific/Auckland')
+
 
 def get_account(scopes):
     config = utils.read_config()
@@ -34,18 +36,17 @@ def get_covid_calendar():
     return calendar
 
 
-def get_next_info(calendar, days, tzone):
+def get_next_info(calendar, days, tzone=DEFAULT_TZONE):
     """
-    tzone (str) - this must be an instance of a tzinfo subclass
     
+    tzone - this must be an instance of a tzinfo subclass
     Return (some) information about the calendar events in the next {days} days,
     ordered by expected release-datetime.
     """
     if not isinstance(days, int) or days < 1:
         raise ValueError("{days} should be positive integer")
-    current_date = datetime.now(tzone) \
-                           .replace(hour=0, second=0, minute=0, microsecond=0)
     
+    current_date = datetime.now(tzone).date()
     q = calendar.new_query('start').greater(current_date - timedelta(days=1))
     q.chain('and').on_attribute('end') \
                   .less(current_date + timedelta(days=days + 1))
@@ -80,21 +81,40 @@ def move_event(calendar, ical_uid, days=0, hours=0, minutes=0):
     """
     tchange = timedelta(days=days, hours=hours, minutes=minutes)
     q = calendar.new_query('ical_uid').equals(ical_uid)
-    event = list(covid_calendar.get_events(query=q))[0]
+    event = list(calendar.get_events(query=q))[0]
     event.start = event.start + tchange
     event.end = event.end + tchange
     event.save()
     
     
-def cancel_event(calendar, ical_uid):
+def cancel_event(calendar, ical_uid, tzone=DEFAULT_TZONE):
     """
-    Cancels event in Outlook calendar
+    Cancels event in Outlook calendar on current date (if it exists)
+
+    tzone - this must be an instance of a tzinfo subclass
+
+    Recurring events share the same `ical_uid` across each date, so removing
+    these events requires specifying lower/upper dates to delete between. This
+    function will only delete a single occurence, not the series of events.
+    (NB: Recurring events is why this only deletes events on the current date.)
     """
-    tchange = timedelta(days=days, hours=hours, minutes=minutes)
+    current_date = datetime.now(tzone).date()
     q = calendar.new_query('ical_uid').equals(ical_uid)
-    event = list(covid_calendar.get_events(query=q))[0]
-    event.cancel_event()
-    event.save()
+    q.chain('and').on_attribute('start') \
+                  .greater(current_date - timedelta(days=1))
+    q.chain('and').on_attribute('end') \
+                  .less(current_date + timedelta(days=1))
+
+    events = list(calendar.get_events(query=q))
+    if len(events) > 1:
+        err_msg = ("This function is for deleting a single event at a time. "
+                   "There is multiple events with the same `ical_uid` today.")
+        raise NotImplementedError(err_msg)
+    elif len(events) == 1:
+        e = events[0]
+        e.cancel_event()
+        e.save()
+    # else: no event to delete
 
 
 def email_alert(message, subject=""):

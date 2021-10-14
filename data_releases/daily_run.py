@@ -86,20 +86,16 @@ def check_for_elapsed_events():
 
 
 if __name__ == "__main__":
-    # Don't use system's actual timezone
-    # system_tzone = tzlocal.get_localzone()
-    system_tzone = pytz.timezone('Pacific/Auckland')
-    
     covid_calendar = outlook.get_covid_calendar()
-    next_day = outlook.get_next_info(covid_calendar, 1, system_tzone)
     
+    next_day = outlook.get_next_info(covid_calendar, 1)
     output = {
         'next_dt': next_day[0]['release_dt'] if len(next_day) > 0 else None,
         'calendar_id': covid_calendar.calendar_id,
         'meta': """
         Gives datetimes according to "{tzone}" timezone ({tzname}).
-        """.format(tzone=system_tzone,
-                   tzname=system_tzone.tzname(datetime.now()))
+        """.format(tzone=outlook.DEFAULT_TZONE,
+                   tzname=outlook.DEFAULT_TZONE.tzname(datetime.now()))
         )
         'full_info': next_day
     }
