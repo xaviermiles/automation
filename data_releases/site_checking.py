@@ -1,5 +1,6 @@
 import re
-import requests
+
+from selenium.common.exceptions import NoSuchElementException
 
 import utils
 

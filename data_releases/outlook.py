@@ -1,11 +1,8 @@
 import re
-import json
-import pytz
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup as bs
 
-from O365 import Account, Connection, FileSystemTokenBackend
-from O365.calendar import Event
+from O365 import Account, FileSystemTokenBackend
 
 import utils
 

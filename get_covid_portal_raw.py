@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime, timedelta
 
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -14,7 +15,7 @@ from infoshare import download
 # Functions to download datasets from First Gas portal
 def by_largest_users():
     print("Starting: by_largest_users")
-    driver = utils.get_firefox_driver(SAVE_DIR, ['application/octet-stream'])
+    driver = utils.get_driver(SAVE_DIR, ['application/octet-stream'])
     driver.get(
         "https://www.oatis.co.nz/Ngc.Oatis.UI.Web.Internet/Common/"
         "OatisLogin.aspx"

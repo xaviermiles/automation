@@ -11,7 +11,7 @@ import pytz
 from datetime import datetime, time
 
 import requests
-from ics import Calendar, Event
+from ics import Calendar
 
 TZONE = pytz.timezone('Pacific/Auckland')
 API_SERVICE_EVENTS = ["Example1", "Example2"]

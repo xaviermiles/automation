@@ -4,6 +4,7 @@ venv/
 
 geckodriver.log
 geckodriver*.tar.gz
+*.exe
 
 data/
 config.yaml
