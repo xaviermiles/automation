@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime, timedelta
 
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -14,7 +15,7 @@ from infoshare import download
 # Functions to download datasets from First Gas portal
 def by_largest_users():
     print("Starting: by_largest_users")
-    driver = utils.get_firefox_driver(SAVE_DIR, ['application/octet-stream'])
+    driver = utils.get_driver(SAVE_DIR, ['application/octet-stream'])
     driver.get(
         "https://www.oatis.co.nz/Ngc.Oatis.UI.Web.Internet/Common/"
         "OatisLogin.aspx"
@@ -48,7 +49,13 @@ def by_largest_users():
     default_fpath = os.path.join(SAVE_DIR, f"{latest_report.text}.xlsx")
     latest_report.click()
     altered_fpath = os.path.join(SAVE_DIR, "Maui SQMQ Report.xlsx")
-    os.rename(default_fpath, altered_fpath)  # overwrites previous copy
+    download_successful = utils.downloads_wait({default_fpath}, 5)
+    if not download_successful:
+        raise NotImplementedError("Download of Maui report timed out")
+    # overwrites previous copy:
+    if os.path.exists(altered_fpath):
+        os.remove(altered_fpath)
+    os.rename(default_fpath, altered_fpath)
     
     print("Finished: by_largest_users\n")
     driver.quit()
