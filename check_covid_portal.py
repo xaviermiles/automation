@@ -9,13 +9,7 @@ import utils
 from data_releases import outlook
 
 
-def get_live_site(driver):
-    driver.get("https://www.stats.govt.nz/experimental/covid-19-data-portal")
-    return driver
-
-
-def get_staging_page(driver):
-    driver.get("https://statisticsnz.shinyapps.io/covid_19_dashboard_staging/")
+def login_staging_page(driver):
     main_page = driver.current_window_handle
 
     driver.find_element_by_xpath("//a[text() = 'Login']").click()
@@ -44,53 +38,66 @@ def get_staging_page(driver):
     return driver
 
 
-def attempt_covid_portal_download(driver, live_site, download_dir):
-    if live_site:
-        driver = get_live_site(driver)
-    else:
-        driver = get_staging_page(driver)
-    sleep(10) # explicit wait since page load always takes time
+def attempt_covid_portal_download(driver, url, download_dir):
+    DOWNLOAD_WAIT = 5 * 60  # five minutes
+    
+    if not live_site:
+        driver = login_staging_page(driver)
 
-    # Download full dataset
-    orange_download_btn = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, "download data-show"))
+    # Download full dataset - long wait since page will still be loading
+    orange_download_btn = WebDriverWait(driver, 30).until(
+        EC.presence_of_element_located((By.ID, "download_data-show"))
     )
     orange_download_btn.click()
     actual_download_btn = WebDriverWait(driver, 5).until(
         EC.presence_of_element_located((By.ID, "download_data-downloadData"))
     )
-    acutal_download_btn.click()
-    # Wait 2min 30sec for download
+    sleep(10)  # give it some time to catch up
+    actual_download_btn.click()
+    
     download_fpath = os.path.join(download_dir, "covid_19_portal_data.xlsx")
-    download_successful = downloads_wait(download_fpath, 150)
+    if os.path.exists(download_fpath):
+        os.remove(download_fpath)  # clear previous downloads
+    download_successful = utils.downloads_wait({download_fpath}, DOWNLOAD_WAIT)
 
-    sleep(10)
     driver.quit()
-    return True
+    return download_successful
 
 
 def check_covid_portal(live_site, download_dir):
+    LIVE_SITE_URL = "https://www.stats.govt.nz/experimental/covid-19-data-portal"
+    STAGING_URL = "https://statisticsnz.shinyapps.io/covid_19_dashboard_staging/"
+    
     driver = utils.get_driver(download_dir, "csv")
-    download_successful = attempt_covid_portal_download(driver, live_site,
-                                                        download_dir)
-    # try:
-    #     download_successful = attempt_covid_portal_download(driver, live_site,
-    #                                                         download_dir)
-    # except Exception as e:
-    #     print("EXCEPTION")
-    #     print(e)
-    #     driver.quit()
-    #     return
+    url = LIVE_SITE_URL if live_site else STAGING_URL
+    driver.get(url)
+    try:
+        download_successful = attempt_covid_portal_download(driver,
+                                                            live_site,
+                                                            download_dir)
+    except Exception as e:
+        download_successful = True # not really, but don't want msg overwritten
+        msg = """
+        Automated checking of COVID_19 Portal failed (exception)
+        <br><br>
+        Exception: {exception}
+        <br><br>
+        ~ Automation
+        """.format(exception=e)
+        subject = "COVID-19 Portal Checking BROKEN"
+    
     if not download_successful:
         msg = """
         Automated checking of COVID-19 Portal failed (download unsuccessful).
-
-        Please check live site manually:
-        https://www.stats.govt.nz/experimental/covid-19-data-
-
+        <br><br>
+        Please check live site manually: {url}
+        <br><br>
         ~ Automation
-        """
-        outlook.email_alert(msg, subject="COVID-19 Portal Down?")
+        """.format(url=url)
+        subject = "COVID-19 Portal NOT WORKING?"
+    
+    if msg:
+        outlook.email_alert(msg, subject=subject)
 
 
 if __name__ == "__main__":
