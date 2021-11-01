@@ -90,6 +90,8 @@ def get_chrome_driver(save_dir=None):
         
     opts = webdriver.ChromeOptions()
     opts.add_argument("--headless")
+    opts.add_argument("--disable-gpu")
+    opts.add_argument("--start-maximized")
     if save_dir:
         opts.add_experimental_option("prefs", {
             "download.default_directory": save_dir,

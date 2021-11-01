@@ -9,7 +9,7 @@ import utils
 from data_releases import outlook
 
 
-def login_staging_page(driver):
+def login_shinyapps(driver):
     main_page = driver.current_window_handle
 
     driver.find_element_by_xpath("//a[text() = 'Login']").click()
@@ -40,9 +40,6 @@ def login_staging_page(driver):
 
 def attempt_covid_portal_download(driver, url, download_dir):
     DOWNLOAD_WAIT = 5 * 60  # five minutes
-    
-    if not live_site:
-        driver = login_staging_page(driver)
 
     # Download full dataset - long wait since page will still be loading
     orange_download_btn = WebDriverWait(driver, 30).until(
@@ -55,7 +52,7 @@ def attempt_covid_portal_download(driver, url, download_dir):
     sleep(10)  # give it some time to catch up
     actual_download_btn.click()
     
-    download_fpath = os.path.join(download_dir, "covid_19_portal_data.xlsx")
+    download_fpath = os.path.join(download_dir, "covid_19_data_portal.xlsx")
     if os.path.exists(download_fpath):
         os.remove(download_fpath)  # clear previous downloads
     download_successful = utils.downloads_wait({download_fpath}, DOWNLOAD_WAIT)
@@ -64,26 +61,36 @@ def attempt_covid_portal_download(driver, url, download_dir):
     return download_successful
 
 
-def check_covid_portal(live_site, download_dir):
-    LIVE_SITE_URL = "https://www.stats.govt.nz/experimental/covid-19-data-portal"
-    STAGING_URL = "https://statisticsnz.shinyapps.io/covid_19_dashboard_staging/"
+def check_covid_portal(site, download_dir):
+    site_urls = {
+        'live': "https://www.stats.govt.nz/experimental/covid-19-data-portal",
+        'uat': "https://statisticsnz.shinyapps.io/covid_19_dashboard_staging/",
+        'teamview': "https://statisticsnz.shinyapps.io/covid_19_dashboard_teamView/"
+    }
+    msg = None
     
     driver = utils.get_driver(download_dir, "csv")
-    url = LIVE_SITE_URL if live_site else STAGING_URL
+    url = site_urls.get(site)
+    if url is None:
+        raise NotImplementedError("`site` should be one of ['live','uat','teamview']")
     driver.get(url)
+    if site == 'uat':
+        driver = login_shinyapps(driver)
     try:
         download_successful = attempt_covid_portal_download(driver,
                                                             live_site,
                                                             download_dir)
     except Exception as e:
+        driver.quit()
         download_successful = True # not really, but don't want msg overwritten
         msg = """
-        Automated checking of COVID_19 Portal failed (exception)
-        <br><br>
-        Exception: {exception}
-        <br><br>
+        Automated checking of COVID_19 Portal failed (exception)<br>
+        <br>
+        Exception:<br>
+        {exception}<br>
+        <br>
         ~ Automation
-        """.format(exception=e)
+        """.format(exception=repr(e))
         subject = "COVID-19 Portal Checking BROKEN"
     
     if not download_successful:
@@ -101,7 +108,7 @@ def check_covid_portal(live_site, download_dir):
 
 
 if __name__ == "__main__":
-    live_site = False
+    live_site = "teamview"
     download_dir = os.path.join(os.getcwd(), "data")
 
     check_covid_portal(live_site, download_dir)
