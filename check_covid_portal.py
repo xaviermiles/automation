@@ -43,14 +43,15 @@ def attempt_covid_portal_download(driver, url, download_dir):
 
     # Download full dataset - long wait since page will still be loading
     orange_download_btn = WebDriverWait(driver, 30).until(
-        EC.presence_of_element_located((By.ID, "download_data-show"))
+        EC.element_to_be_clickable((By.ID, "download_data-show"))
     )
     orange_download_btn.click()
-    actual_download_btn = WebDriverWait(driver, 5).until(
-        EC.presence_of_element_located((By.ID, "download_data-downloadData"))
-    )
     sleep(10)  # give it some time to catch up
-    actual_download_btn.click()
+    actual_download_btn = WebDriverWait(driver, 5).until(
+        EC.element_to_be_clickable((By.ID, "download_data-downloadData"))
+    )
+    # Use js to click button (so it can get around the survey popup)
+    driver.execute_script("arguments[0].click();", actual_download_btn)
     
     download_fpath = os.path.join(download_dir, "covid_19_data_portal.xlsx")
     if os.path.exists(download_fpath):
