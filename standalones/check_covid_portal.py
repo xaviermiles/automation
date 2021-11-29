@@ -1,41 +1,34 @@
+"""
+Simplified version of `../check_covid_portal.py` with local imports removed
+"""
 import os
 from time import sleep
 
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-import utils
-from data_releases import outlook
+
+def get_driver(save_dir, download_filetypes):
+    # Given choice of browser, copy in corresponding code from `../utils.py`
+    # (or write new stuff if not Firefox/Chrome)
+    pass
 
 
-def login_shinyapps(driver):
-    main_page = driver.current_window_handle
-
-    driver.find_element_by_xpath("//a[text() = 'Login']").click()
-    # Switch to login pop-up window
-    for handle in driver.window_handles:
-        if handle != main_page:
-            login_page = handle
-    driver.switch_to.window(login_page)
-    # Enter credentials
-    cred = utils.read_config()['statisticsnz.shinyapps']
-    email_entry = WebDriverWait(driver, 5).until(
-        EC.presence_of_element_located((By.XPATH, "//input[@name = 'email']"))
-    )
-    email_entry.send_keys(cred['email'])
-    driver.find_element_by_xpath("//span[text() = 'Continue']/..").click()
-    password_entry = WebDriverWait(driver, 5).until(
-        EC.presence_of_element_located((By.XPATH, "//input[@type='password']"))
-    )
-    password_entry.send_keys(cred['password'])
-    driver.find_element_by_xpath(
-        "//span[text() = 'Log In' and ../@type = 'submit']/.."
-    ).click()
-    # Switch back to original window
-    driver.switch_to.window(main_page)
-
-    return driver
+def downloads_wait(filepaths, timeout, retry_interval=0.5):
+    seconds = 0
+    dl_wait = True
+    while dl_wait and seconds < timeout:
+        for f in filepaths.copy():
+            if os.path.exists(f):
+                filepaths.remove(f)
+        if len(filepaths) == 0:
+            dl_wait = False
+        
+        sleep(retry_interval)
+        seconds += retry_interval
+    return not dl_wait
 
 
 def attempt_covid_portal_download(driver, download_dir):
@@ -52,33 +45,21 @@ def attempt_covid_portal_download(driver, download_dir):
     )
     # Use js to click button (so it can get around the survey popup)
     driver.execute_script("arguments[0].click();", actual_download_btn)
-    
+
     download_fpath = os.path.join(download_dir, "covid_19_data_portal.xlsx")
     if os.path.exists(download_fpath):
         os.remove(download_fpath)  # clear previous downloads
-    download_successful = utils.downloads_wait({download_fpath}, DOWNLOAD_WAIT)
+    download_successful = downloads_wait({download_fpath}, DOWNLOAD_WAIT)
 
     driver.quit()
     return download_successful
 
 
-def check_covid_portal(site, download_dir):
-    site_urls = {
-        'live': "https://statisticsnz.shinyapps.io/covid_19_dashboard/",
-        'uat': "https://statisticsnz.shinyapps.io/covid_19_dashboard_staging/",
-        'teamview': "https://statisticsnz.shinyapps.io/covid_19_dashboard_teamView/"
-    }
+def check_covid_portal(url, download_dir):
     msg = None
-    
-    driver = utils.get_driver(download_dir, ["csv"])
-    url = site_urls.get(site)
-    if url is None:
-        raise NotImplementedError(
-            f"`site` should be one of {list(site_urls.keys())}"
-        )
+
+    driver = get_driver(download_dir, "csv")
     driver.get(url)
-    if site == 'uat':
-        driver = login_shinyapps(driver)
     try:
         download_successful = attempt_covid_portal_download(driver,
                                                             download_dir)
@@ -94,7 +75,7 @@ def check_covid_portal(site, download_dir):
         ~ Automation
         """.format(exception=repr(e))
         subject = "COVID-19 Portal Checking BROKEN"
-    
+
     if not download_successful:
         msg = """
         Automated checking of COVID-19 Portal failed (download unsuccessful)<br>
@@ -104,13 +85,18 @@ def check_covid_portal(site, download_dir):
         ~ Automation
         """.format(url=url)
         subject = "COVID-19 Portal NOT WORKING?"
+
+    # if msg:
+    #     outlook.email_alert(msg, subject=subject)
     
-    if msg:
-        outlook.email_alert(msg, subject=subject)
+    # Not sure how alerts work in Azure, but I was previously using O365 package
+    # (Office 365 API) to send email alert
+    print(msg)
+    print(subject)
 
 
 if __name__ == "__main__":
-    live_site = "live"
+    url = "https://statisticsnz.shinyapps.io/covid_19_dashboard/"
     download_dir = os.path.join(os.getcwd(), "data")
 
-    check_covid_portal(live_site, download_dir)
+    check_covid_portal(url, download_dir)
