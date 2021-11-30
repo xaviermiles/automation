@@ -133,13 +133,28 @@ def make_infoshare_selections(driver,
             for opt in options:
                 select_elem.select_by_visible_text(opt)
         elif isinstance(options, str):
-            # USE_LATEST_DATETIME should be the only str since this is using
-            # title_to_options_explicit
-            dt_format = re.match('USE_LATEST_DATETIME<(.*)>', options).group(1)
-            options_dt = [datetime.strptime(opt.text, dt_format)
-                          for opt in select_elem.options if opt.text]
-            latest_dt_str = datetime.strftime(max(options_dt), dt_format)
-            select_elem.select_by_visible_text(latest_dt_str)
+            # USE_LATEST_DATETIME and UNTIL_LATEST_DATETIME should be the only
+            # strings since this is using title_to_options_explicit (everything
+            # else should be list)
+            latest_regex = re.match('USE_LATEST_DATETIME<(.*)>', options)
+            until_regex = re.match('<(.*)>UNTIL_LATEST_DATETIME<(.*)>', options)
+            if latest_regex:
+                dt_format = latest_regex.group(1)
+                options_dt = [datetime.strptime(opt.text, dt_format)
+                              for opt in select_elem.options if opt.text]
+                latest_dt_str = datetime.strftime(max(options_dt), dt_format)
+                select_elem.select_by_visible_text(latest_dt_str)
+            elif until_regex:
+                dt_format = until_regex.group(2)
+                start_date = datetime.strptime(until_regex.group(1), dt_format)
+                options_dt = [datetime.strptime(opt.text, dt_format)
+                              for opt in select_elem.options if opt.text]
+                for option_dt_i in options_dt:
+                    if option_dt_i >= start_date:
+                        text_i = datetime.strftime(option_dt_i, dt_format)
+                        select_elem.select_by_visible_text(text_i)
+            
+                
     
     driver = download_dataset(driver, dataset_name, save_dir,
                               show_status_flags, get_metadata)
@@ -269,8 +284,11 @@ def get_infoshare_dataset(dataset_ref, title_to_options, dataset_name, save_dir,
     Acceptable formats for options:
       - list[str] of specific options to select.
       - 'USE_LATEST_DATETIME<***>' (str) for selecting latest Time period,
-        where ** is the date format of the Infoshare options
+        where *** is the date format of the Infoshare options
         (eg 'USE_LATEST_DATETIME<%YM%m>' would work for '2021M06').
+      - '<**1>UNTIL_LATEST_DATETIME<**2>' (str) for selecting a range of Time
+        period, where **2 is the date format of the Infoshare options and **1
+        is the starting period (in the appropriate format)
       - 'ALL' will select all available options.
     
     TODO: allow for nth most recent datetime?? or the n most recent datetimes??

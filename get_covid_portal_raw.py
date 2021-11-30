@@ -167,17 +167,21 @@ def get_air_cargo():
             title_to_options={
                 'New Zealand Port': ['Christchurch Airport'],
                 'Observations': observations,
-                'Time': 'USE_LATEST_DATETIME<%YM%m>'
+                'Time': '<2013M01>UNTIL_LATEST_DATETIME<%YM%m>'
             },
             dataset_name=fname_template.format(dataset=dataset),
             save_dir=SAVE_DIR
         )
 
+    print("Merging air cargo")
     merged = None
     for dataset in dataset_to_obs.keys():
         fpath = os.path.join(SAVE_DIR, fname_template.format(dataset = dataset) + ".csv")
         df = pd.read_csv(fpath, skiprows=1, header=1, index_col=0)
+        df.index.names = ['Month']
+        df.index = pd.to_datetime(df.index, format="%YM%m").strftime('%B %Y')
         df.columns = [f"{dataset}_{name}" for name in df.columns]
+        
         if merged is not None:
             merged = pd.merge(merged, df, left_index=True, right_index=True)
         else:
@@ -216,16 +220,19 @@ def get_sea_cargo():
                     'Port Chalmers (sea)','Tauranga (sea)','Wellington (sea)'
                 ],
                 'Observations': observations,
-                'Time': 'USE_LATEST_DATETIME<%YM%m>'
+                'Time': '<2013M01>UNTIL_LATEST_DATETIME<%YM%m>'
             },
             dataset_name=fname_template.format(dataset=dataset),
             save_dir=SAVE_DIR
         )
     
+    print("Merging sea cargo (and then splitting by port)")
     merged = None
     for dataset in dataset_to_obs.keys():
         fpath = os.path.join(SAVE_DIR, fname_template.format(dataset = dataset) + ".csv")
         df = pd.read_csv(fpath, skiprows=1, header=[0,1], index_col=0)
+        df.index.names = ['Month']
+        df.index = pd.to_datetime(df.index, format="%YM%m").strftime('%B %Y')
         df.columns.names = ['New Zealand Port', 'Observations']
         df = df.stack('New Zealand Port')
         df.columns = [f"{dataset}_{name}" for name in df.columns]
