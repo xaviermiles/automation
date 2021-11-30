@@ -6,15 +6,14 @@ checking the last event in Outlook calendar.
 """
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
-import tzlocal
 import schedule
 
 from data_releases import outlook, site_checking
     
     
-def coordinate(event_details):
+def coordinate(event_details, tzone):
     """
     If check is successful (or throws error) alert via Outlook Email and remove
     Outlook Calendar entry
@@ -42,7 +41,7 @@ def coordinate(event_details):
         schedule.clear(event_details['ical_uid'])
     elif len(schedule.get_jobs(event_details['ical_uid'])) == 0:
         # no more retries scheduled, move calendar event to next weekday
-        if datetime.now(system_tzone).strftime('%A') == "Friday":
+        if datetime.now(tzone).strftime('%A') == "Friday":
             days_to_add = 3
         else:
             days_to_add = 1
@@ -66,18 +65,20 @@ def coordinate(event_details):
         schedule.clear(event_details['ical_uid'])
 
 
-def check_for_elapsed_events():
+def check_for_elapsed_events(next_day_info, tzone):
     # The events are sorted by datetime, so the first element is the next event
-    next_event = next_day[0]
+    next_event = next_day_info[0]
     next_dt = datetime.fromisoformat(next_event['release_dt'])
-    if next_dt < datetime.now(system_tzone):
+    if next_dt < datetime.now(tzone):
         # Event has elapsed so should be put on "active" status
-        schedule.every(5).minutes.do(coordinate, event_details=next_event) \
-                .until(datetime.now(system_tzone) + timedelta(m))
+        schedule.every(5).minutes.do(coordinate,
+                                     event_details=next_event,
+                                     tzone=tzone) \
+                .until(datetime.now(tzone) + timedelta(minutes=30)) \
                 .tag(next_event['ical_uid'])
         # ...and removed from "pending"
-        if len(next_day) > 1:
-            next_day = next_day[1:]
+        if len(next_day_info) > 1:
+            next_day_info = next_day_info[1:]
         else:
             # no more events to check for
             schedule.clear('main_job')
@@ -95,15 +96,16 @@ if __name__ == "__main__":
         'meta': """
         Gives datetimes according to "{tzone}" timezone ({tzname}).
         """.format(tzone=outlook.DEFAULT_TZONE,
-                   tzname=outlook.DEFAULT_TZONE.tzname(datetime.now()))
-        )
+                   tzname=outlook.DEFAULT_TZONE.tzname(datetime.now())),
         'full_info': next_day
     }
     with open('../data/next_day.json', 'w') as f:
         json.dump(output, f)
     
     # Start running
-    schedule.every(15).minutes.do(check_for_elapsed_events) \
+    schedule.every(15).minutes.do(check_for_elapsed_events,
+                                  next_day_info=next_day,
+                                  tzone=outlook.DEFAULT_TZONE) \
             .tag('main_job')
     
     while len(schedule.get_jobs()) > 0:
