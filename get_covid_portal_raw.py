@@ -1,8 +1,11 @@
-# Gets some of the raw data for the COVID-19 portal
+"""
+Gets some of the raw data for the COVID-19 portal
+"""
 import os
 import re
 from datetime import datetime, timedelta
 
+import pandas as pd
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -142,64 +145,105 @@ def by_selected_major_users():
 
 # Functions to download datasets from Infoshare
 def get_air_cargo():
-    dataset_to_info = {
+    fname_template = "air_cargo_{dataset}"
+    dataset_to_obs = {
         'Exports': [
-            ('FOB (free on board) NZ$(000)', 'FOB_NZD'),
-            ('Gross weight (tonnes)', 'GW_Tonnes')
+            'FOB (free on board) NZ$(000)',
+            'Gross weight (tonnes)'
         ],
         'Imports': [
-            ('CIF (cost, insurance and freight) NZ$(000)', 'CIF_NZD'),
-            ('Gross weight (tonnes)', 'GW_Tonnes')
+            'CIF (cost, insurance and freight) NZ$(000)',
+            'Gross weight (tonnes)'
         ]
     }
-    for dataset, info in dataset_to_info.items():
-        for observation, suffix in info:
-            download.get_infoshare_dataset(
-                dataset_ref=(
-                    'Imports and exports',
-                    'Overseas Cargo Statistics - OSC',
-                    f'Total {dataset} by New Zealand Port (Monthly)'
-                ),
-                title_to_options={
-                    'New Zealand Port': ['Christchurch Airport'],
-                    'Observations': [observation],
-                    'Time': 'USE_LATEST_DATETIME<%YM%m>'
-                },
-                dataset_name=f"air_cargo_{dataset}_{suffix}",
-                save_dir=SAVE_DIR
-            )
+    
+    for dataset, observations in dataset_to_obs.items():
+        download.get_infoshare_dataset(
+            dataset_ref=(
+                'Imports and exports',
+                'Overseas Cargo Statistics - OSC',
+                f'Total {dataset} by New Zealand Port (Monthly)'
+            ),
+            title_to_options={
+                'New Zealand Port': ['Christchurch Airport'],
+                'Observations': observations,
+                'Time': 'USE_LATEST_DATETIME<%YM%m>'
+            },
+            dataset_name=fname_template.format(dataset=dataset),
+            save_dir=SAVE_DIR
+        )
+
+    merged = None
+    for dataset in dataset_to_obs.keys():
+        fpath = os.path.join(SAVE_DIR, fname_template.format(dataset = dataset) + ".csv")
+        df = pd.read_csv(fpath, skiprows=1, header=1, index_col=0)
+        df.columns = [f"{dataset}_{name}" for name in df.columns]
+        if merged is not None:
+            merged = pd.merge(merged, df, left_index=True, right_index=True)
+        else:
+            merged = df
+        os.remove(fpath)
+    out_fpath = os.path.join(
+        SAVE_DIR, "COVID-19 - Christchurch Airport traffic statistics.csv"
+    )
+    merged.to_csv(out_fpath)
+        
             
 
 def get_sea_cargo():
-    dataset_to_info = {
+    fname_template = "sea_cargo_{dataset}"
+    dataset_to_obs = {
         'Exports': [
-            ('FOB (free on board) NZ$(000)', 'FOB_NZD'),
-            ('Gross weight (tonnes)', 'GW_Tonnes')
+            'FOB (free on board) NZ$(000)',
+            'Gross weight (tonnes)'
         ],
         'Imports': [
-            ('CIF (cost, insurance and freight) NZ$(000)', 'CIF_NZD'),
-            ('Gross weight (tonnes)', 'GW_Tonnes')
+            'CIF (cost, insurance and freight) NZ$(000)',
+            'Gross weight (tonnes)'
         ]
     }
-    for dataset, info in dataset_to_info.items():
-        for observation, suffix in info:
-            download.get_infoshare_dataset(
-                dataset_ref=(
-                    'Imports and exports',
-                    'Overseas Cargo Statistics - OSC',
-                    f'Total {dataset} by New Zealand Port (Monthly)'
-                ),
-                title_to_options={
-                    'New Zealand Port': [
-                        'Auckland (sea)','Lyttelton (sea)','Napier (sea)',
-                        'Port Chalmers (sea)','Tauranga (sea)','Wellington (sea)'
-                    ],
-                    'Observations': [observation],
-                    'Time': 'USE_LATEST_DATETIME<%YM%m>'
-                },
-                dataset_name=f"sea_cargo_{dataset}_{suffix}",
-                save_dir=SAVE_DIR
-            )
+    
+    for dataset, observations in dataset_to_obs.items():
+        download.get_infoshare_dataset(
+            dataset_ref=(
+                'Imports and exports',
+                'Overseas Cargo Statistics - OSC',
+                f'Total {dataset} by New Zealand Port (Monthly)'
+            ),
+            title_to_options={
+                'New Zealand Port': [
+                    'Auckland (sea)','Lyttelton (sea)','Napier (sea)',
+                    'Port Chalmers (sea)','Tauranga (sea)','Wellington (sea)'
+                ],
+                'Observations': observations,
+                'Time': 'USE_LATEST_DATETIME<%YM%m>'
+            },
+            dataset_name=fname_template.format(dataset=dataset),
+            save_dir=SAVE_DIR
+        )
+    
+    merged = None
+    for dataset in dataset_to_obs.keys():
+        fpath = os.path.join(SAVE_DIR, fname_template.format(dataset = dataset) + ".csv")
+        df = pd.read_csv(fpath, skiprows=1, header=[0,1], index_col=0)
+        df.columns.names = ['New Zealand Port', 'Observations']
+        df = df.stack('New Zealand Port')
+        df.columns = [f"{dataset}_{name}" for name in df.columns]
+        
+        if merged is not None:
+            merged = pd.merge(merged, df, left_index=True, right_index=True)
+        else:
+            merged = df
+        os.remove(fpath)
+    
+    ports = df.index.get_level_values('New Zealand Port').unique()
+    for port in ports:
+        port_mask = merged.index.get_level_values('New Zealand Port') == port
+        merged_filt = merged.loc[port_mask, :].droplevel('New Zealand Port')
+        out_fpath = os.path.join(
+            SAVE_DIR, f"COVID-19 - Sea cargo {port.replace(' (sea)', '')}.csv"
+        )
+        merged_filt.to_csv(out_fpath)
             
             
 def get_card_transaction_total_spend():
