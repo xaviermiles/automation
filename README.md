@@ -10,6 +10,8 @@ The _api_checks/_ folder includes a Python script (_api_checks.py_) which can be
 This relies on R scripts/functions (_compare.R_, _compare_funcs.R_) to do data wrangling and make comparisons.
 This is being used to double-check the data uploaded to the API is correct.
 
+The _standalones/_ folder is for Python scripts that have been adapted to include no local imports (ie. self-contained).
+
 **Note:** Any Python scripts should be run with their directory as the current working directory.
 For example, _infoshare/scrape_all_infoshare.py_ should be run with _infoshare/_ as the working directory.
 
@@ -43,11 +45,9 @@ google-chrome --version
 ```
 and then need to install the corresponding version of chromedriver. Suppose Chrome was version 94.0.4606.71, then run the following to install chromedriver.
 ```
-wget https://chromedriver.storage.googleapis.com/94.0.4606.61/chromedriver_linux64.zip
+wget https://chromedriver.storage.googleapis.com/94.0.4606.71/chromedriver_linux64.zip
 unzip chromedriver_linux64.zip
 sudo mv chromedriver /usr/bin/chromedriver
 sudo chown root:root /usr/bin/chromedriver
 sudo chmod +x /usr/bin/chromedriver
 ```
-
-**NOTE: utils.get_chrome_driver function has not been tested yet**
