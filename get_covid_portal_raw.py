@@ -1,7 +1,7 @@
 """
 Gets some of the raw data for the COVID-19 portal
 """
-import os
+import os, shutil
 import re
 from datetime import datetime, timedelta
 
@@ -76,7 +76,7 @@ def by_selected_major_users():
         'PHT04902': ['4921'],
         'TAC31001': ['9931003'],
         'TIR33501': ['33501'],
-        'BAL08201': ['8201'],
+        # 'BAL08201': ['8201'],  # no longer updated?
         'BAL09626': ['9626'],
         'GLB03401': ['3401', '3402'],
         'KIN04310': ['4301', '4302'],
@@ -98,15 +98,19 @@ def by_selected_major_users():
     driver.find_element_by_id('DDRReportLinkButton').click()
     # 3. Select the previous/second-most-recent month
     month_dropdown = Select(driver.find_element_by_id('MonthDropDown'))
-    previous_month_dt = datetime.today().replace(day=1) - timedelta(days=1)
-    previous_month_str = datetime.strftime(previous_month_dt, '%b %Y')
+    yesterday = datetime.today() - timedelta(days=1)
+    yesterday_month_str = datetime.strftime(yesterday, "%b %Y")
     try:
-        month_dropdown.select_by_visible_text(previous_month_str)
+        month_dropdown.select_by_visible_text(yesterday_month_str)
     except NoSuchElementException:
         raise NoSuchElementException(
-            f"Previous month ({previous_month_str}) not an option."
+            f"Previous month ({yesterday_month_str}) not an option."
         )
-    # 4. Select welded points/IDs for the latest month
+    # 3.9 Create "Previous" folder if necessary
+    previous_dir = os.path.join(SAVE_DIR, "Previous")
+    if not os.path.exists(previous_dir):
+        os.makedirs(previous_dir)
+    # 4. Select welded points/IDs for the latest month and download
     for welded_pt in welded_pt_to_meters.keys():
         print(f"{welded_pt}: ", end='', flush=True)
         for meter in welded_pt_to_meters[welded_pt]:
@@ -132,10 +136,11 @@ def by_selected_major_users():
                 driver.find_element_by_id('MeterGroupCodes')
             )
             meter_dropdown.select_by_visible_text(meter)
-            # Download the data for each meter, replacing the previous versions
+            # Download the data for each meter, moving the previous versions
+            # out of the way
             download_fpath = os.path.join(SAVE_DIR, f"DDR{meter}.csv")
             if os.path.exists(download_fpath):
-                os.remove(download_fpath)
+                shutil.move(download_fpath, previous_dir)
             driver.find_element_by_id('DownloadButton').click()
         print()
     
@@ -179,7 +184,7 @@ def get_air_cargo():
         fpath = os.path.join(SAVE_DIR, fname_template.format(dataset = dataset) + ".csv")
         df = pd.read_csv(fpath, skiprows=1, header=1, index_col=0)
         df.index.names = ['Month']
-        df.index = pd.to_datetime(df.index, format="%YM%m").strftime('%B %Y')
+        df.index = pd.to_datetime(df.index, format="%YM%m").strftime('%d/%m/%Y')
         df.columns = [f"{dataset}_{name}" for name in df.columns]
         
         if merged is not None:
@@ -232,7 +237,7 @@ def get_sea_cargo():
         fpath = os.path.join(SAVE_DIR, fname_template.format(dataset = dataset) + ".csv")
         df = pd.read_csv(fpath, skiprows=1, header=[0,1], index_col=0)
         df.index.names = ['Month']
-        df.index = pd.to_datetime(df.index, format="%YM%m").strftime('%B %Y')
+        df.index = pd.to_datetime(df.index, format="%YM%m").strftime('%d/%m/%Y')
         df.columns.names = ['New Zealand Port', 'Observations']
         df = df.stack('New Zealand Port')
         df.columns = [f"{dataset}_{name}" for name in df.columns]
