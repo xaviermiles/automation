@@ -201,8 +201,8 @@ def download_dataset(driver, dataset_name, save_dir,
     data = tables[0].get_attribute('outerHTML')
     data_soup = BeautifulSoup(data, 'html.parser')
     data_df = pd.read_html(str(data_soup))[0]
-    data_df.to_csv(os.path.join(save_dir, f"{dataset_name}.csv"), index=False)
-    
+    data_df.to_csv(os.path.join(save_dir, f"{dataset_name}.csv"),
+                   header=False, index=False)
     if get_metadata:
         meta = tables[1].find_element_by_xpath("//td[@class = 'footnote']") \
                         .get_attribute('outerHTML')
@@ -254,7 +254,7 @@ def get_chunked_infoshare_dataset(dataset_ref, chunked_title_to_options,
         chunk2 = csv.reader(f2)
         for i, (chunk1_line, chunk2_line) in enumerate(zip(chunk1, chunk2)):
             if chunk1_line != chunk2_line:
-                num_header_rows = i
+                num_header_rows = i - 1
                 break
     if num_header_rows is None:
         raise NotImplementedError("Two chunk-CSVs were identical.")

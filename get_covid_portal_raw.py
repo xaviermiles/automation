@@ -182,7 +182,7 @@ def get_air_cargo():
     merged = None
     for dataset in dataset_to_obs.keys():
         fpath = os.path.join(SAVE_DIR, fname_template.format(dataset = dataset) + ".csv")
-        df = pd.read_csv(fpath, skiprows=1, header=1, index_col=0)
+        df = pd.read_csv(fpath, header=1, index_col=0)
         df.index.names = ['Month']
         df.index = pd.to_datetime(df.index, format="%YM%m").strftime('%d/%m/%Y')
         df.columns = [f"{dataset}_{name}" for name in df.columns]
@@ -235,7 +235,7 @@ def get_sea_cargo():
     merged = None
     for dataset in dataset_to_obs.keys():
         fpath = os.path.join(SAVE_DIR, fname_template.format(dataset = dataset) + ".csv")
-        df = pd.read_csv(fpath, skiprows=1, header=[0,1], index_col=0)
+        df = pd.read_csv(fpath, header=[0,1], index_col=0)
         df.index.names = ['Month']
         df.index = pd.to_datetime(df.index, format="%YM%m").strftime('%d/%m/%Y')
         df.columns.names = ['New Zealand Port', 'Observations']

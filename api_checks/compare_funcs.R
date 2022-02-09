@@ -64,7 +64,7 @@ pivot_infoshare_to_long <- function(infoshare_wide, num_header_rows) {
   #' copy omits these rows for simplicity. <- PREVIOUSLY
   #' Whether the filtering is necessary depends on how the API was downloaded.
   names(infoshare_wide) <-
-    lapply(1:num_header_rows, function(i) {as_vector(infoshare_wide[i, -1])}) %>%
+    lapply(0:(num_header_rows - 1), function(i) {as_vector(infoshare_wide[i, -1])}) %>%
     c(., sep = "__") %>%
     do.call(paste, .) %>%
     c("Period", .)
