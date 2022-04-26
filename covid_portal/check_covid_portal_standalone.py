@@ -1,5 +1,5 @@
 """
-Simplified version of `../check_covid_portal.py` with local imports removed
+Simplified version of `check_covid_portal.py` with local imports removed
 """
 import os
 from time import sleep
