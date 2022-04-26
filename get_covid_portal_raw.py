@@ -256,10 +256,41 @@ def get_sea_cargo():
             SAVE_DIR, f"COVID-19 - Sea cargo {port.replace(' (sea)', '')}.csv"
         )
         merged_filt.to_csv(out_fpath)
-            
-            
+
+
 def get_card_transaction_total_spend():
-    for treatment in ['Actual','Seasonally adjusted']:
+    fname_template = "ect_total_spend_{name}"
+    dataset_to_obs = {
+       'Exports': [
+           'FOB (free on board) NZ$(000)',
+           'Gross weight (tonnes)'
+       ],
+       'Imports': [
+            'CIF (cost, insurance and freight) NZ$(000)',
+            'Gross weight (tonnes)'
+        ]
+    }
+
+    for dataset, observations in dataset_to_obs.items():
+        download.get_infoshare_dataset(
+            dataset_ref=(
+                'Imports and exports',
+                'Overseas Cargo Statistics - OSC',
+                f'Total {dataset} by New Zealand Port (Monthly)'
+            ),
+            title_to_options={
+                'New Zealand Port': [
+                    'Auckland (sea)','Lyttelton (sea)','Napier (sea)',
+                    'Port Chalmers (sea)','Tauranga (sea)','Wellington (sea)'
+                ],
+                'Observations': observations,
+                'Time': '<2013M01>UNTIL_LATEST_DATETIME<%YM%m>'
+            },
+            dataset_name=fname_template.format(dataset=dataset),
+            save_dir=SAVE_DIR
+        )
+
+    for treatment in ['Actual', 'Seasonally adjusted']:
         download.get_infoshare_dataset(
             dataset_ref=(
                 'Economic indicators',
