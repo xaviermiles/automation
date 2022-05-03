@@ -23,12 +23,14 @@
         "browser_to_use":"chrome",
         "chrome_executable_path":"C:\\chromefolder\\chrome.exe",
         "firefox_executable_path":"/usr/bin/firefox.exe"
+      },
+      "statisticsnz.shinyapps":{
+        "email":"john.smith@gmail.com",
+        "password":"password"
       }
     }
   ],
   "required":[
-    "o365",
-    "alert_email_addresses",
     "webdriver"
   ],
   "properties":{
@@ -98,6 +100,18 @@
         "firefox_executable_path":{
           "type":"string",
           "description":"Can be omitted if 'firefox.exe' is on PATH."
+        }
+      }
+    },
+    "statisticsnz.shinyapps":{
+      "type":"object",
+      "description":"Credentials for Statistics NZ shinyapps.",
+      "properties":{
+        "email":{
+          "type":"string"
+        },
+        "password":{
+          "type":"string"
         }
       }
     }

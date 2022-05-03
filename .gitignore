@@ -1,6 +1,7 @@
 __pycache__/
 venv/
-.spyproject
+.spyproject/
+.vscode/
 
 geckodriver.log
 geckodriver*.tar.gz

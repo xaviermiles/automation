@@ -10,15 +10,18 @@ The _api_checks/_ folder includes a Python script (_api_checks.py_) which can be
 This relies on R scripts/functions (_compare.R_, _compare_funcs.R_) to do data wrangling and make comparisons.
 This is being used to double-check the data uploaded to the API is correct.
 
-**Note:** Any Python scripts should be run with their directory as the current working directory.
-For example, _infoshare/scrape_all_infoshare.py_ should be run with _infoshare/_ as the working directory.
-
 ## Set-up
+You must also have a file named "config.yaml" (at root of repository) controls some options for various functions/scripts in the repo.
+See `config-schema.json` for an example config.
+**The only required field is `webdriver.browser_to_use`, which can be "chrome" or "firefox".**
+
 Make sure the local repo is included in PATH or PYTHONPATH (for Python importing).
+Any Python scripts should be run with their directory as the current working directory.
+For example, `infoshare/scrape_all_infoshare.py` should be run with `infoshare/` as the working directory.
 
-Selenium (Python package) requires a browser and a webdriver. This repo supports Firefox + Geckodriver or Chrome + Chromedriver.
+Selenium (Python package) requires a browser and a webdriver. This repo supports Firefox + Geckodriver or Chrome + Chromedriver, which is specified in "config.yaml" as described above.
 
-#### Firefox on Linux
+### Firefox on Linux
 ```
 sudo apt install firefox
 ```
@@ -31,7 +34,7 @@ sudo mv geckodriver /usr/local/bin/
 rm geckdriver-v0.30.0-linux64.tar.gz
 ```
 
-#### Chrome on (deb-based) Linux:
+### Chrome on (deb-based) Linux:
 ```
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo dpkg -i google-chrome-stable_current_amd64.deb
