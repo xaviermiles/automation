@@ -1,14 +1,28 @@
 # Automation
 
 ## Files
-The _infoshare/_ folder has a module (_download.py_) with functions for downloading specified datasets from [Infoshare](http://infoshare.stats.govt.nz/).
-This folder also includes a proof-of-concept/WIP script that downloads every Infoshare dataset, which uses a depth-first search of HTML to identify dataset names and then uses functions in _download.py_ to handle the downloading.
+`infoshare/`
 
-The _covid_portal/_ folder has a script for getting raw data for the COVID-19 data portal, and a couple of scripts for checking the downloads on the website
+- `download.py`: functions for downloading specified datasets from [Infoshare](http://infoshare.stats.govt.nz/)
+- `scrape_all_infoshare.py`: proof-of-concept script that downloads every Infoshare dataset, which uses a depth-first search of HTML to identify dataset names and then uses functions in `download.py` to handle the downloading
 
-The _api_checks/_ folder includes a Python script (_api_checks.py_) which can be run to check the equivalency of data scraped from Infoshare and the corresponding data from the Stats NZ OData API.
-This relies on R scripts/functions (_compare.R_, _compare_funcs.R_) to do data wrangling and make comparisons.
-This is being used to double-check the data uploaded to the API is correct.
+`covid_portal/`
+
+- `check_covid_portal.py`: checks the download on the COVID-19 data portal
+- `check_covid_portal_standalone.py`: ditto, but has no dependencies on any other python files
+- `get_covid_portal_raw.py`: scrapes some data for the portal
+
+`api_checks/`
+
+- `api_checks.py`: script to check the equivalency of data scraped from Infoshare and the corresponding data from the Stats NZ OData API
+-  `compare.R` and `compare_funcs.R`: helper scripts/functions for data wrangling and making comparisons
+
+`data_releases/`
+
+- `daily_run.py`: WIP/mock schedule-able script that checks Outlook calendar for datasets pending supply, using scraping to check whether *new* data is available from the corresponding data supplier's website, and sending notification emails and removing calendar item if the dataset is ready to be downloaded
+- `site_checking.py`: defines function to check data supplier website for *new* data
+- `outlook.py`: helper functions to interact with Outlook email and calendar via O365 python package
+- `stats_release_calendar.py`: scrapes Stats NZ release calendar
 
 ## Set-up
 You must also have a file named "config.yaml" (at root of repository) controls some options for various functions/scripts in the repo.
