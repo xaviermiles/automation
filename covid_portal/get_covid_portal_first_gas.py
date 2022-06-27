@@ -4,7 +4,7 @@ import shutil
 import re
 from datetime import datetime, timedelta
 
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -13,8 +13,8 @@ import utils
 from infoshare import download
 
 
-def by_largest_users():
-    print("Starting: by_largest_users")
+def get_maui():
+    print("Starting: get_maui")
     driver = utils.get_driver(SAVE_DIR, ['application/octet-stream'])
     driver.get(
         "https://www.oatis.co.nz/Ngc.Oatis.UI.Web.Internet/Common/"
@@ -51,18 +51,19 @@ def by_largest_users():
     altered_fpath = os.path.join(SAVE_DIR, "Maui SQMQ Report.xlsx")
     download_successful = utils.downloads_wait({default_fpath}, 5)
     if not download_successful:
-        raise NotImplementedError("Download of Maui report timed out")
+        raise TimeoutException("Download of Maui report timed out")
     # overwrites previous copy:
     if os.path.exists(altered_fpath):
         os.remove(altered_fpath)
     os.rename(default_fpath, altered_fpath)
 
-    print("Finished: by_largest_users\n")
+    print("Finished: get_maui\n")
     driver.quit()
 
 
-def by_selected_major_users():
-    print("Starting: by_selected_major_users")
+def get_first_gas():
+    print("Starting: get_first_gas")
+    # Commented codes are those which are no longer being updated by FirstGas
     welded_pt_to_meters = {
         'EGC30701': ['30701', '30703'],
         'KUR33601': ['33601'],
@@ -73,8 +74,8 @@ def by_selected_major_users():
         'PHT04902': ['4921'],
         'TAC31001': ['9931003'],
         'TIR33501': ['33501'],
-        # 'BAL08201': ['8201'],  # no longer updated?
-        'BAL09626': ['9626'],
+        # 'BAL08201': ['8201'],
+        # 'BAL09626': ['9626'],
         'GLB03401': ['3401', '3402'],
         'KIN04310': ['4301', '4302'],
         'MSD01801': ['1801', '1803'],
@@ -109,7 +110,7 @@ def by_selected_major_users():
         os.makedirs(previous_dir)
     # 4. Select welded points/IDs for the latest month and download
     for welded_pt in welded_pt_to_meters.keys():
-        print(f"{welded_pt}: ", end='', flush=True)
+        print(f"\n{welded_pt}: ", end='', flush=True)
         for meter in welded_pt_to_meters[welded_pt]:
             print(f"{meter}, ", end='', flush=True)
             _ = WebDriverWait(driver, 2).until(
@@ -133,15 +134,19 @@ def by_selected_major_users():
                 driver.find_element_by_id('MeterGroupCodes')
             )
             meter_dropdown.select_by_visible_text(meter)
-            # Download the data for each meter, moving the previous versions
-            # out of the way
+            # Download the data for each meter, saving a copy to Previous folder
             download_fpath = os.path.join(SAVE_DIR, f"DDR{meter}.csv")
             if os.path.exists(download_fpath):
-                shutil.move(download_fpath, previous_dir)
+                shutil.move(
+                    download_fpath,
+                    os.path.join(previous_dir, f"DDR{meter}.csv")
+                )
             driver.find_element_by_id('DownloadButton').click()
-        print()
+            download_successful = utils.downloads_wait({download_fpath}, 10)
+            if not download_successful:
+                raise TimeoutException(f"Download of DDR{meter} timed out")
 
-    print("Finished: selected_major_users\n")
+    print("\nFinished: get_first_gas\n")
     driver.quit()
 
 
@@ -150,5 +155,5 @@ if __name__ == "__main__":
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
 
-    by_largest_users()
-    by_selected_major_users()
+    get_maui()
+    get_first_gas()
