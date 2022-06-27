@@ -170,7 +170,7 @@ def get_air_cargo():
                 f'Total {dataset} by New Zealand Port (Monthly)'
             ),
             title_to_options={
-                'New Zealand Port': ['Christchurch Airport'],
+                'New Zealand Port': ['Christchurch Airport', 'Auckland Airport'],
                 'Observations': observations,
                 'Time': '<2013M01>UNTIL_LATEST_DATETIME<%YM%m>'
             },
